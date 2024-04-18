@@ -293,8 +293,8 @@ app.layout = html.Div([
 )
 def update(selected_option):
     updated_df = get_daily_cost(selected_option)
-    compute_sum = '{0:.2f}'.format(updated_df.at[df.index[-1], 'CPU'] + updated_df.at[df.index[-1], 'GPU'])
-    storage_sum = '{0:.2f}'.format(updated_df.at[df.index[-1], 'Storage'])
+    compute_sum = '{0:.2f}'.format(updated_df.iloc[-1]['CPU'] + updated_df.iloc[-1]['GPU'])
+    storage_sum = '{0:.2f}'.format(updated_df.iloc[-1]['Storage'])
     total_sum = '{0:.2f}'.format(float(compute_sum) + float(storage_sum))
     
     for column in updated_df.columns:
