@@ -94,7 +94,7 @@ def add_day(date: str, days: int) -> str:
     return dt_new.strftime("%Y-%m-%d")
 
 
-def get_aggregated_allocations():
+def get_aggregated_allocations(selection):
     params = {
         "window": window_to_param[window_choice],
         "aggregate": (
@@ -221,7 +221,7 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
             "END": costData["window"]["end"],
             "CPU COST": f"${cpu_cost}",
             "GPU COST": f"${gpu_cost}",
-            "COMPUT COST": f"${compute_cost}",
+            "COMPUTE COST": f"${compute_cost}",
             "STORAGE COST": f"${storage_cost}",
 
         })
@@ -245,17 +245,85 @@ requests_pathname_prefix = '/{}/{}/r/notebookSession/{}/'.format(
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], routes_pathname_prefix=None, requests_pathname_prefix=requests_pathname_prefix)
 
 app.layout = html.Div([
-    html.H2('Domino Cost Management Report', style = {'textAlign': 'center'}),
-    html.Div(
-        dcc.Dropdown(
-            id='dropdown',
-            options = dropdown_options,
-            value = "Last 14 days",
-            clearable = False,
-            searchable = False
+    html.H2('Domino Cost Management Report', style = {'textAlign': 'center', "margin-top": "30px"}),
+    dbc.Row([
+        dbc.Col(
+            html.H4('Data select', style = {"margin-top": "20px"}),
+            width=2
+        ),
+        dbc.Col(
+            html.Hr(style = {"margin-top": "40px"}),
+            width=10
+        )
+    ]),
+    dbc.Row([
+        dbc.Col(
+            html.P("Time Span:", style={"float": "right", "margin-top": "5px"}),
+            width=1
+        ),
+        dbc.Col(
+            dcc.Dropdown(
+                id='time_span_select',
+                options = dropdown_options,
+                value = "Last 14 days",
+                clearable = False,
+                searchable = False
             ),
-        style={'width': '200px', 'font-family': 'Helvetica, sans-serif'}
-    ),
+            width=2
+        ),
+        dbc.Col(width=9)
+    ], style={"margin-top": "30px"}),
+    dbc.Row([
+        dbc.Col(
+            html.H4('Filter data by', style = {"margin-top": "20px"}),
+            width=2
+        ),
+        dbc.Col(
+            html.Hr(style = {"margin-top": "40px"}),
+            width=10
+        )
+    ], style={"margin-top": "50px"}),
+    dbc.Row([
+        dbc.Col(
+            html.P("Billing Tag:", style={"float": "right", "margin-top": "5px"}),
+            width=1
+        ),
+        dbc.Col(
+            dcc.Dropdown(
+                id='billing_select',
+                options = ['test', 'test2'],
+                clearable = True,
+                searchable = True
+            ),
+            width=3
+        ),
+        dbc.Col(
+            html.P("Project:", style={"float": "right", "margin-top": "5px"}),
+            width=1
+        ),
+        dbc.Col(
+            dcc.Dropdown(
+                id='project_select',
+                options = ['test', 'test2'],
+                clearable = True,
+                searchable = True
+            ),
+            width=3
+        ),
+        dbc.Col(
+            html.P("User:", style={"float": "right", "margin-top": "5px"}),
+            width=1
+        ),
+        dbc.Col(
+            dcc.Dropdown(
+                id='user_select',
+                options = ['test', 'test2'],
+                clearable = True,
+                searchable = True
+            ),
+            width=3
+        ),
+    ], style={"margin-top": "30px"}),
     dbc.Row([
         dbc.Col(dbc.Card(id='card1', children=[
             dbc.CardBody([
@@ -275,7 +343,7 @@ app.layout = html.Div([
                 html.H4(id='storagecard')
             ])
         ]))
-    ], style={"margin-top": "30px"}),
+    ], style={"margin-top": "50px"}),
     dcc.Graph(
         id='cumulative-daily-costs',
         config = {
@@ -288,19 +356,29 @@ app.layout = html.Div([
      [Output('cumulative-daily-costs', 'figure'),
       Output('totalcard', 'children'),
       Output('computecard', 'children'),
-      Output('storagecard', 'children')],
-     [Input('dropdown', 'value')]
+      Output('storagecard', 'children'),
+      Output('billing_select', 'options'),
+      Output('project_select', 'options'),
+      Output('user_select', 'options')],
+     [Input('time_span_select', 'value')]
 )
-def update(selected_option):
-    updated_df = get_daily_cost(selected_option)
+def update(time_span):
+    updated_df = get_daily_cost(time_span)
     compute_sum = '{0:.2f}'.format(updated_df.iloc[-1]['CPU'] + updated_df.iloc[-1]['GPU'])
     storage_sum = '{0:.2f}'.format(updated_df.iloc[-1]['Storage'])
     total_sum = '{0:.2f}'.format(float(compute_sum) + float(storage_sum))
     
-    for column in updated_df.columns:
-        updated_df[column] = updated_df[column].apply(lambda x: "${0:,.0f}".format(x))
+    allocations = get_aggregated_allocations(time_span)
+    cost_table = get_execution_cost_table(allocations)
     
-    figure = {
+    users = cost_table['USER'].unique().tolist()
+    projects = cost_table['PROJECT NAME'].unique().tolist()
+    billing_tags = cost_table['BILLING TAG'].unique().tolist()
+    
+    for column in updated_df.columns:
+        updated_df[column] = updated_df[column].apply(lambda x: "${0:,.2f}".format(x))
+    
+    cumulative_cost_graph = {
         'data': [
             go.Bar(
                 x=updated_df.index,
@@ -309,14 +387,14 @@ def update(selected_option):
             ) for column in updated_df.columns
         ],
         'layout': go.Layout(
-            title='Cumulative Cost',
+            title='Cumulative Cost Over Time Span',
             barmode='stack',
             yaxis_tickprefix = '$',
             yaxis_tickformat = ',.'
         )
     }
     
-    return figure, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}')
+    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0',port=8888) # Domino hosts all apps at 0.0.0.0:8888
