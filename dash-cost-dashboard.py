@@ -212,6 +212,7 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
         gpu_cost = round(sum([costData.get(k,0) for k in gpu_cost_key]), 2)
         compute_cost = round(cpu_cost + gpu_cost, 2)
         storage_cost = round(sum([costData.get(k,0) for k in storage_cost_keys]), 2)
+        total_cost = round(compute_cost + storage_cost, 2)
         exec_data.append({
             "TYPE": workload_type,
             "PROJECT NAME": project_name,
@@ -223,7 +224,7 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
             "GPU COST": f"${gpu_cost}",
             "COMPUTE COST": f"${compute_cost}",
             "STORAGE COST": f"${storage_cost}",
-
+            "TOTAL COST": f"${total_cost}"
         })
     execution_costs = pd.DataFrame(exec_data)
     if all(windowKey in execution_costs for windowKey in ("START", "END")):
@@ -291,7 +292,7 @@ app.layout = html.Div([
         dbc.Col(
             dcc.Dropdown(
                 id='billing_select',
-                options = ['test', 'test2'],
+                options = ['No data'],
                 clearable = True,
                 searchable = True
             ),
@@ -304,7 +305,7 @@ app.layout = html.Div([
         dbc.Col(
             dcc.Dropdown(
                 id='project_select',
-                options = ['test', 'test2'],
+                options = ['No data'],
                 clearable = True,
                 searchable = True
             ),
@@ -317,7 +318,7 @@ app.layout = html.Div([
         dbc.Col(
             dcc.Dropdown(
                 id='user_select',
-                options = ['test', 'test2'],
+                options = ['No data'],
                 clearable = True,
                 searchable = True
             ),
@@ -325,22 +326,22 @@ app.layout = html.Div([
         ),
     ], style={"margin-top": "30px"}),
     dbc.Row([
-        dbc.Col(dbc.Card(id='card1', children=[
+        dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Total"),
-                html.H4(id='totalcard')
+                html.H4("No data", id='totalcard')
             ])
         ])),
-        dbc.Col(dbc.Card(id='card2', children=[
+        dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Compute"),
-                html.H4(id='computecard')
+                html.H4("No data", id='computecard')
             ])
         ])),
-        dbc.Col(dbc.Card(id='card3', children=[
+        dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Storage"),
-                html.H4(id='storagecard')
+                html.H4("No data", id='storagecard')
             ])
         ]))
     ], style={"margin-top": "50px"}),
