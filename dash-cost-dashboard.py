@@ -230,13 +230,15 @@ app.layout = html.Div([
             ])
         ]))
     ], style={"margin-top": "50px"}),
-    dcc.Graph(
-        id='cumulative-daily-costs',
-        config = {
-            'displayModeBar': False
-        },
-        style={'margin-top': '40px'}
-    ),
+    dcc.Loading(children=[
+        dcc.Graph(
+            id='cumulative-daily-costs',
+            config = {
+                'displayModeBar': False
+            },
+            style={'margin-top': '40px'}
+        )
+    ], type='default'),
     dbc.Row([
         dbc.Col(
             dcc.Graph(
