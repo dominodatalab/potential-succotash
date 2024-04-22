@@ -267,14 +267,26 @@ app.layout = html.Div([
       Output('user_select', 'options'),
       Output('user_chart', 'figure'),
       Output('project_chart', 'figure')],
-     [Input('time_span_select', 'value')]
+     [Input('time_span_select', 'value'),
+      Input('user_select', 'value'),
+      Input('project_select', 'value'),
+      Input('billing_select', 'value')]
 )
-def update(time_span):
+def update(time_span, user, project, billing_tag):
     allocations = get_aggregated_allocations(time_span)
     cost_table = get_execution_cost_table(allocations)
     cost_table['TOTAL COST NUMERIC'] = cost_table['TOTAL COST'].str.replace('[\$,]', '', regex=True).astype(float)
     cost_table['START'] = pd.to_datetime(cost_table['START'])
     cost_table['FORMATTED START'] = cost_table['START'].dt.strftime('%B %-d')
+    
+    if user is not None:
+        cost_table = cost_table[cost_table['USER'] == user]
+        
+    if project is not None:
+        cost_table = cost_table[cost_table['PROJECT NAME'] == project]
+        
+    if billing_tag is not None:
+        cost_table = cost_table[cost_table['BILLING TAG'] == billing_tag]
     
     total_sum = round(cost_table['TOTAL COST'].replace('[\$,]', '', regex=True).astype(float).sum(), 2)
     compute_sum = round(cost_table['COMPUTE COST'].replace('[\$,]', '', regex=True).astype(float).sum(), 2)
