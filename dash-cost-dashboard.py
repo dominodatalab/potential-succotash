@@ -359,6 +359,7 @@ def update(time_span, user, project, billing_tag):
         ],
         data=cost_table.to_dict('records'),
         page_size=10,
+        sort_action='native',
         style_cell={'fontSize': '11px'},
         style_header={
             'backgroundColor': '#e5ecf6',
