@@ -18,7 +18,6 @@ from collections import defaultdict
 from typing import Dict, List
 from datetime import datetime, timedelta
 
-# For hitting the API
 api_proxy = os.environ["DOMINO_API_PROXY"]
 
 def get_domino_namespace() -> str:
@@ -49,16 +48,6 @@ auth_header = {
     'X-Authorization': get_token()
 }
 
-# For interacting with the different scopes
-breakdown_options = ["Projects", "User", "Organization"]
-breakdown_to_param = {
-    "Projects": "dominodatalab.com/project-name",
-    "User": "dominodatalab.com/starting-user-username",
-    "Organization": "dominodatalab.com/organization-name",
-}
-
-
-# For granular aggregations
 window_to_param = {
     "30d": "Last 30 days",
     "14d": "Last 14 days",
@@ -101,27 +90,42 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
     
     for costData in data:
         workload_type, project_id, project_name, username, organization, billing_tag = costData["name"].split("/")
-        cpu_cost = round(sum([costData.get(k,0) for k in cpu_cost_key]), 2)
-        gpu_cost = round(sum([costData.get(k,0) for k in gpu_cost_key]), 2)
-        compute_cost = round(cpu_cost + gpu_cost, 2)
-        storage_cost = round(sum([costData.get(k,0) for k in storage_cost_keys]), 2)
-        total_cost = round(compute_cost + storage_cost, 2)
+        cpu_cost = sum([costData.get(k,0) for k in cpu_cost_key])
+        gpu_cost = sum([costData.get(k,0) for k in gpu_cost_key])
+        compute_cost = cpu_cost + gpu_cost
+        storage_cost = sum([costData.get(k,0) for k in storage_cost_keys])
+        total_cost = compute_cost + storage_cost
         exec_data.append({
             "TYPE": workload_type,
             "PROJECT NAME": project_name,
             "BILLING TAG": billing_tag,
             "USER": username,
+            "ORGANIZATION": organization,
             "START": costData["window"]["start"],
             "END": costData["window"]["end"],
-            "CPU COST": f"${cpu_cost}",
-            "GPU COST": f"${gpu_cost}",
-            "COMPUTE COST": f"${compute_cost}",
-            "STORAGE COST": f"${storage_cost}",
-            "TOTAL COST": f"${total_cost}"
+            "CPU COST": cpu_cost,
+            "GPU COST": gpu_cost,
+            "COMPUTE COST": compute_cost,
+            "STORAGE COST": storage_cost,
+            "TOTAL COST": total_cost
         })
     execution_costs = pd.DataFrame(exec_data)
     
     return execution_costs
+
+def buildHistogram(cost_table, bin_by):
+    top = cost_table.groupby(bin_by)['TOTAL COST'].sum().nlargest(10).index
+    costs = cost_table[cost_table[bin_by].isin(top)]
+    title = "Top " + bin_by.title() + " by Total Cost"
+    chart = px.histogram(costs, x='TOTAL COST', y=bin_by, orientation='h', 
+                              title=title, labels={bin_by: bin_by.title(), 'TOTAL COST': 'Total Cost'},
+                              hover_data={'TOTAL COST': '$:.2f'},
+                              category_orders={bin_by: costs.groupby(bin_by)['TOTAL COST'].sum().sort_values(ascending=False).index})
+    chart.update_layout(title_text=title, title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
+    chart.update_xaxes(title_text="Total Cost")
+    chart.update_traces(hovertemplate='$%{x:.2f}<extra></extra>')
+    
+    return chart
 
 requests_pathname_prefix = '/{}/{}/r/notebookSession/{}/'.format(
     os.environ.get("DOMINO_PROJECT_OWNER"),
@@ -151,7 +155,7 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='time_span_select',
                 options = window_to_param,
-                value = "lastweek",
+                value = "30d",
                 clearable = False,
                 searchable = False
             ),
@@ -214,19 +218,19 @@ app.layout = html.Div([
         dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Total"),
-                html.H4("No data", id='totalcard')
+                html.H4("Loading", id='totalcard')
             ])
         ])),
         dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Compute"),
-                html.H4("No data", id='computecard')
+                html.H4("Loading", id='computecard')
             ])
         ])),
         dbc.Col(dbc.Card(children=[
             dbc.CardBody([
                 html.H3("Storage"),
-                html.H4("No data", id='storagecard')
+                html.H4("Loading", id='storagecard')
             ])
         ]))
     ], style={"margin-top": "50px"}),
@@ -257,6 +261,24 @@ app.layout = html.Div([
             )
         )
     ]),
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(
+                id='org_chart',
+                config = {
+                    'displayModeBar': False
+                }
+            )
+        ),
+        dbc.Col(
+            dcc.Graph(
+                id='tag_chart',
+                config = {
+                    'displayModeBar': False
+                }
+            )
+        )
+    ]),
     html.H4('Workload Cost Details', style={"margin-top": "50px"}),
     html.Div(id='table-container')
 ], className="container")
@@ -271,6 +293,8 @@ app.layout = html.Div([
       Output('user_select', 'options'),
       Output('user_chart', 'figure'),
       Output('project_chart', 'figure'),
+      Output('org_chart', 'figure'),
+      Output('tag_chart', 'figure'),
       Output('table-container', 'children')],
      [Input('time_span_select', 'value'),
       Input('user_select', 'value'),
@@ -280,7 +304,6 @@ app.layout = html.Div([
 def update(time_span, user, project, billing_tag):
     allocations = get_aggregated_allocations(time_span)
     cost_table = get_execution_cost_table(allocations)
-    cost_table['TOTAL COST NUMERIC'] = cost_table['TOTAL COST'].str.replace('[\$,]', '', regex=True).astype(float)
     cost_table['START'] = pd.to_datetime(cost_table['START'])
     cost_table['FORMATTED START'] = cost_table['START'].dt.strftime('%B %-d')
     
@@ -293,9 +316,9 @@ def update(time_span, user, project, billing_tag):
     if billing_tag is not None:
         cost_table = cost_table[cost_table['BILLING TAG'] == billing_tag]
     
-    total_sum = round(cost_table['TOTAL COST'].replace('[\$,]', '', regex=True).astype(float).sum(), 2)
-    compute_sum = round(cost_table['COMPUTE COST'].replace('[\$,]', '', regex=True).astype(float).sum(), 2)
-    storage_sum = round(cost_table['STORAGE COST'].replace('[\$,]', '', regex=True).astype(float).sum(), 2)
+    total_sum = "${:.2f}".format(cost_table['TOTAL COST'].sum())
+    compute_sum = "${:.2f}".format(cost_table['COMPUTE COST'].sum())
+    storage_sum = "${:.2f}".format(cost_table['STORAGE COST'].sum())
     
     users = cost_table['USER'].unique().tolist()
     projects = cost_table['PROJECT NAME'].unique().tolist()
@@ -317,22 +340,12 @@ def update(time_span, user, project, billing_tag):
         )
     }
     
-    top_users = cost_table.groupby('USER')['TOTAL COST NUMERIC'].sum().nlargest(10).index
-    top_user_costs = cost_table[cost_table['USER'].isin(top_users)]
-    user_chart = px.histogram(top_user_costs, x='TOTAL COST NUMERIC', y='USER', orientation='h', 
-                              title='Total Cost by User', labels={'USER': 'User', 'TOTAL COST NUMERIC': 'Total Cost'},
-                              category_orders={'USER': top_user_costs.groupby('USER')['TOTAL COST NUMERIC'].sum().sort_values(ascending=False).index})
-    user_chart.update_layout(title_text='Top Users by Total Cost', title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
-    user_chart.update_xaxes(title_text="Total Cost")
+    user_chart = buildHistogram(cost_table, 'USER')
+    project_chart = buildHistogram(cost_table, 'PROJECT NAME')
+    org_chart = buildHistogram(cost_table, 'ORGANIZATION')
+    tag_chart = buildHistogram(cost_table, 'BILLING TAG')
     
-    top_projects = cost_table.groupby('PROJECT NAME')['TOTAL COST NUMERIC'].sum().nlargest(10).index
-    top_project_costs = cost_table[cost_table['PROJECT NAME'].isin(top_projects)]
-    project_chart = px.histogram(top_project_costs, x='TOTAL COST NUMERIC', y='PROJECT NAME', orientation='h', 
-                              title='Total Cost by Project', labels={'PROJECT NAME': 'Project', 'TOTAL COST NUMERIC': 'Total Cost'},
-                              category_orders={'PROJECT NAME': top_project_costs.groupby('PROJECT NAME')['TOTAL COST NUMERIC'].sum().sort_values(ascending=False).index})
-    project_chart.update_layout(title_text='Top Projects by Total Cost', title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
-    project_chart.update_xaxes(title_text="Total Cost")
-    
+    formatted = {'locale': {}, 'nully': '', 'prefix': None, 'specifier': '$,.2f'}
     table = dt.DataTable(
         columns=[
             {'name': "TYPE", 'id': "TYPE"},
@@ -340,9 +353,9 @@ def update(time_span, user, project, billing_tag):
             {'name': "BILLING TAG", 'id': "BILLING TAG"},
             {'name': "USER", 'id': "USER"},
             {'name': "START DATE", 'id': "FORMATTED START"},
-            {'name': "CPU COST", 'id': "CPU COST"},
-            {'name': "GPU COST", 'id': "GPU COST"},
-            {'name': "STORAGE COST", 'id': "STORAGE COST"},
+            {'name': "CPU COST", 'id': "CPU COST", 'type': 'numeric', 'format': formatted},
+            {'name': "GPU COST", 'id': "GPU COST", 'type': 'numeric', 'format': formatted},
+            {'name': "STORAGE COST", 'id': "STORAGE COST", 'type': 'numeric', 'format': formatted},
         ],
         data=cost_table.to_dict('records'),
         page_size=10,
@@ -353,7 +366,40 @@ def update(time_span, user, project, billing_tag):
         }
     )
     
-    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users, user_chart, project_chart, table
+    return cumulative_cost_graph, html.H4(total_sum), html.H4(compute_sum), html.H4(storage_sum), billing_tags, projects, users, user_chart, project_chart, org_chart, tag_chart, table
+
+@app.callback(
+    [Output('user_select', 'value')],
+    [Input('user_chart', 'clickData')]
+)
+def user_clicked(clickData):
+    if clickData is not None:
+        x_value = clickData['points'][0]['y']
+        return [x_value]
+    else:
+        return [None]
+    
+@app.callback(
+    [Output('project_select', 'value')],
+    [Input('project_chart', 'clickData')]
+)
+def project_clicked(clickData):
+    if clickData is not None:
+        x_value = clickData['points'][0]['y']
+        return [x_value]
+    else:
+        return [None]
+
+@app.callback(
+    [Output('billing_select', 'value')],
+    [Input('tag_chart', 'clickData')]
+)
+def user_clicked(clickData):
+    if clickData is not None:
+        x_value = clickData['points'][0]['y']
+        return [x_value]
+    else:
+        return [None]
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0',port=8888) # Domino hosts all apps at 0.0.0.0:8888
