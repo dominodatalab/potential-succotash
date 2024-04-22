@@ -237,12 +237,24 @@ app.layout = html.Div([
         },
         style={'margin-top': '40px'}
     ),
-    dcc.Graph(
-        id='user_chart',
-        config = {
-            'displayModeBar': False
-        }
-    )
+    dbc.Row([
+        dbc.Col(
+            dcc.Graph(
+                id='user_chart',
+                config = {
+                    'displayModeBar': False
+                }
+            )
+        ),
+        dbc.Col(
+            dcc.Graph(
+                id='project_chart',
+                config = {
+                    'displayModeBar': False
+                }
+            )
+        )
+    ]),
 ], className="container")
 
 @app.callback(
@@ -253,7 +265,8 @@ app.layout = html.Div([
       Output('billing_select', 'options'),
       Output('project_select', 'options'),
       Output('user_select', 'options'),
-      Output('user_chart', 'figure')],
+      Output('user_chart', 'figure'),
+      Output('project_chart', 'figure')],
      [Input('time_span_select', 'value')]
 )
 def update(time_span):
@@ -295,7 +308,15 @@ def update(time_span):
     user_chart.update_layout(title_text='Top Users by Total Cost', title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
     user_chart.update_xaxes(title_text="Total Cost")
     
-    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users, user_chart
+    top_projects = cost_table.groupby('PROJECT NAME')['TOTAL COST NUMERIC'].sum().nlargest(10).index
+    top_project_costs = cost_table[cost_table['PROJECT NAME'].isin(top_projects)]
+    project_chart = px.histogram(top_project_costs, x='TOTAL COST NUMERIC', y='PROJECT NAME', orientation='h', 
+                              title='Total Cost by Project', labels={'PROJECT NAME': 'Project', 'TOTAL COST NUMERIC': 'Total Cost'},
+                              category_orders={'PROJECT NAME': top_project_costs.groupby('PROJECT NAME')['TOTAL COST NUMERIC'].sum().sort_values(ascending=False).index})
+    project_chart.update_layout(title_text='Top Projects by Total Cost', title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
+    project_chart.update_xaxes(title_text="Total Cost")
+    
+    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users, user_chart, project_chart
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0',port=8888) # Domino hosts all apps at 0.0.0.0:8888
