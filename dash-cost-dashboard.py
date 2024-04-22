@@ -3,7 +3,7 @@ import dash
 from dash.dependencies import Input, Output, State
 import dash_core_components as dcc
 import dash_html_components as html
-import dash_table_experiments as dt
+import dash_table as dt
 import dash_bootstrap_components as dbc
 import json
 import pandas as pd
@@ -257,6 +257,8 @@ app.layout = html.Div([
             )
         )
     ]),
+    html.H4('Workload Cost Details', style={"margin-top": "50px"}),
+    html.Div(id='table-container')
 ], className="container")
 
 @app.callback(
@@ -268,7 +270,8 @@ app.layout = html.Div([
       Output('project_select', 'options'),
       Output('user_select', 'options'),
       Output('user_chart', 'figure'),
-      Output('project_chart', 'figure')],
+      Output('project_chart', 'figure'),
+      Output('table-container', 'children')],
      [Input('time_span_select', 'value'),
       Input('user_select', 'value'),
       Input('project_select', 'value'),
@@ -330,7 +333,27 @@ def update(time_span, user, project, billing_tag):
     project_chart.update_layout(title_text='Top Projects by Total Cost', title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
     project_chart.update_xaxes(title_text="Total Cost")
     
-    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users, user_chart, project_chart
+    table = dt.DataTable(
+        columns=[
+            {'name': "TYPE", 'id': "TYPE"},
+            {'name': "PROJECT NAME", 'id': "PROJECT NAME"},
+            {'name': "BILLING TAG", 'id': "BILLING TAG"},
+            {'name': "USER", 'id': "USER"},
+            {'name': "START DATE", 'id': "FORMATTED START"},
+            {'name': "CPU COST", 'id': "CPU COST"},
+            {'name': "GPU COST", 'id': "GPU COST"},
+            {'name': "STORAGE COST", 'id': "STORAGE COST"},
+        ],
+        data=cost_table.to_dict('records'),
+        page_size=10,
+        style_cell={'fontSize': '11px'},
+        style_header={
+            'backgroundColor': '#e5ecf6',
+            'fontWeight': 'bold'
+        }
+    )
+    
+    return cumulative_cost_graph, html.H4(f'${total_sum}'), html.H4(f'${compute_sum}'), html.H4(f'${storage_sum}'), billing_tags, projects, users, user_chart, project_chart, table
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0',port=8888) # Domino hosts all apps at 0.0.0.0:8888
