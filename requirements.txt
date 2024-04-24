@@ -14,13 +14,8 @@
 # See https://docs.dominodatalab.com/en/latest/reference/environments/Environment_management.html
 # for instructions.
 
-# Requirements for the Python/Flask app publishing example.
-flask>=1.0
-
-# Requirements for the Python/Dash app publishing example.
-dash
-dash-core-components
-dash-html-components
-dash-renderer
-dash-table-experiments
-dash-bootstrap-components
+dash~=2.16
+dash-renderer~=1.9
+dash-table-experiments~=0.6
+dash-bootstrap-components~=1.6
+pandas~=2.2
