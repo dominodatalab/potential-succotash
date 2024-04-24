@@ -142,7 +142,7 @@ requests_pathname_prefix = '/{}/{}/r/notebookSession/{}/'.format(
     os.environ.get("DOMINO_PROJECT_NAME"),
     os.environ.get("DOMINO_RUN_ID")
 )
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], routes_pathname_prefix=None, requests_pathname_prefix=requests_pathname_prefix)
+app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], routes_pathname_prefix=None, requests_pathname_prefix=requests_pathname_prefix)
 
 app.layout = html.Div([
     html.H2('Domino Cost Management Report', style = {'textAlign': 'center', "margin-top": "30px"}),
@@ -357,7 +357,7 @@ def update(time_span, user, project, billing_tag):
     tag_chart = buildHistogram(cost_table, 'BILLING TAG')
     
     formatted = {'locale': {}, 'nully': '', 'prefix': None, 'specifier': '$,.2f'}
-    table = dt.DataTable(
+    table = dash_table.DataTable(
         columns=[
             {'name': "TYPE", 'id': "TYPE"},
             {'name': "PROJECT NAME", 'id': "PROJECT NAME"},
