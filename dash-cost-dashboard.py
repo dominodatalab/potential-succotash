@@ -54,6 +54,16 @@ window_to_param = {
     "lastweek": "Last week"
 }
 
+def get_today_timestamp():
+    return pd.Timestamp("today", tz="UTC").normalize()
+
+def get_time_delta(time_span):
+        if time_span == 'lastweek':
+            days_to_use = 7
+        else:
+            days_to_use = int(time_span.split('d')[0])
+        return timedelta(days=days_to_use-1)
+
 def get_aggregated_allocations(selection):
     params = {
         "window": selection,
@@ -110,6 +120,9 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
             "TOTAL COST": total_cost
         })
     execution_costs = pd.DataFrame(exec_data)
+
+    execution_costs['START'] = pd.to_datetime(execution_costs['START'])
+    execution_costs['FORMATTED START'] = execution_costs['START'].dt.strftime('%B %-d')
     
     return execution_costs
 
@@ -304,8 +317,6 @@ app.layout = html.Div([
 def update(time_span, user, project, billing_tag):
     allocations = get_aggregated_allocations(time_span)
     cost_table = get_execution_cost_table(allocations)
-    cost_table['START'] = pd.to_datetime(cost_table['START'])
-    cost_table['FORMATTED START'] = cost_table['START'].dt.strftime('%B %-d')
     
     if user is not None:
         cost_table = cost_table[cost_table['USER'] == user]
@@ -324,11 +335,14 @@ def update(time_span, user, project, billing_tag):
     projects = cost_table['PROJECT NAME'].unique().tolist()
     billing_tags = cost_table['BILLING TAG'].unique().tolist()
     
+    x_date_series = pd.date_range(get_today_timestamp() - get_time_delta(time_span), get_today_timestamp()).strftime('%B %-d')
+    cost_table_grouped_by_date = cost_table.groupby('FORMATTED START')
+
     cumulative_cost_graph = {
         'data': [
             go.Bar(
-                x=cost_table['FORMATTED START'],
-                y=cost_table[column],
+                x=x_date_series,
+                y=cost_table_grouped_by_date[column].sum().reindex(x_date_series, fill_value=0),
                 name=column
             ) for column in ['CPU COST', 'GPU COST', 'STORAGE COST']
         ],
