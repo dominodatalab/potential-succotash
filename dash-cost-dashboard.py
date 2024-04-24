@@ -1,22 +1,19 @@
-import subprocess
-import dash
-from dash.dependencies import Input, Output, State
-import dash_core_components as dcc
-import dash_html_components as html
-import dash_table as dt
+from dash import (
+    Dash,
+    dash_table,
+    dcc,
+    html
+)
+from dash.dependencies import Input, Output
 import dash_bootstrap_components as dbc
-import json
 import pandas as pd
-import numpy as np
-import plotly
 import os
 import re
 import requests
 import plotly.graph_objs as go
 import plotly.express as px
-from collections import defaultdict
-from typing import Dict, List
-from datetime import datetime, timedelta
+from typing import List
+from datetime import timedelta
 
 api_proxy = os.environ["DOMINO_API_PROXY"]
 
