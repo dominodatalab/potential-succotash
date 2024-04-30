@@ -313,6 +313,9 @@ app.layout = html.Div([
 )
 def update(time_span, user, project, billing_tag):
     allocations = get_aggregated_allocations(time_span)
+    if not allocations:
+        return {}, html.H4('No data'), html.H4('No data'), html.H4('No data'), [], [], [], None, None, None, None, None
+
     cost_table = get_execution_cost_table(allocations)
     
     if user is not None:
