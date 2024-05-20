@@ -35,23 +35,25 @@ class TokenExpiredException(Exception):
     pass
 
 def get_token() -> str:
-    orgs_res = requests.get(auth_url)  
+    orgs_res = requests.get(auth_url)
     token = orgs_res.content.decode('utf-8')
     if token == "<ANONYMOUS>":
         raise TokenExpiredException("Your token has expired. Please redeploy your Domino Cost App.")
     return token
- 
-auth_header = { 
+
+auth_header = {
     'X-Authorization': get_token()
 }
+
+NO_TAG = "No tag"
 
 window_to_param = {
     "30d": "Last 30 days",
     "14d": "Last 14 days",
-    "lastweek": "Last week"
+    "7d": "Last 7 days"
 }
 
-def get_today_timestamp():
+def get_today_timestamp() -> pd.Timestamp:
     return pd.Timestamp("today", tz="UTC").normalize()
 
 def get_time_delta(time_span):
@@ -75,15 +77,13 @@ def get_aggregated_allocations(selection):
         "accumulate": False,
     }
 
-    
-    res = requests.get(allocations_url, params=params, headers=auth_header)  
-    
-    res.raise_for_status() 
-    alloc_data = res.json()["data"]
-   
-    filtered = filter(lambda costData: costData["name"] != "__idle__", alloc_data)
 
-    return list(filtered)
+    res = requests.get(allocations_url, params=params, headers=auth_header)
+
+    res.raise_for_status()
+    alloc_data = res.json()["data"]
+
+    return alloc_data
 
 def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
 
@@ -93,15 +93,21 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
     gpu_cost_key = ["gpuCost", "gpuCostAdjustment"]
     storage_cost_keys = ["pvCost", "ramCost", "pvCostAdjustment", "ramCostAdjustment"]
 
-    data = [costData for costData in aggregated_allocations if not costData["name"].startswith("__")]
-    
-    for costData in data:
+    for costData in aggregated_allocations:
+        # Skip any cost data that starts with __ like __idle__ or __unallocated__
+        if costData["name"].startswith("__"):
+            continue
+
         workload_type, project_id, project_name, username, organization, billing_tag = costData["name"].split("/")
         cpu_cost = sum([costData.get(k,0) for k in cpu_cost_key])
         gpu_cost = sum([costData.get(k,0) for k in gpu_cost_key])
         compute_cost = cpu_cost + gpu_cost
         storage_cost = sum([costData.get(k,0) for k in storage_cost_keys])
         total_cost = compute_cost + storage_cost
+
+        # Change __unallocated__ billing tag into "No Tag"
+        billing_tag = billing_tag if billing_tag != '__unallocated__' else NO_TAG
+
         exec_data.append({
             "TYPE": workload_type,
             "PROJECT NAME": project_name,
@@ -120,21 +126,33 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
 
     execution_costs['START'] = pd.to_datetime(execution_costs['START'])
     execution_costs['FORMATTED START'] = execution_costs['START'].dt.strftime('%B %-d')
-    
+
     return execution_costs
 
 def buildHistogram(cost_table, bin_by):
     top = cost_table.groupby(bin_by)['TOTAL COST'].sum().nlargest(10).index
     costs = cost_table[cost_table[bin_by].isin(top)]
+    data_index = costs.groupby(bin_by)['TOTAL COST'].sum().sort_values(ascending=False).index
     title = "Top " + bin_by.title() + " by Total Cost"
-    chart = px.histogram(costs, x='TOTAL COST', y=bin_by, orientation='h', 
+    chart = px.histogram(costs, x='TOTAL COST', y=bin_by, orientation='h',
                               title=title, labels={bin_by: bin_by.title(), 'TOTAL COST': 'Total Cost'},
                               hover_data={'TOTAL COST': '$:.2f'},
-                              category_orders={bin_by: costs.groupby(bin_by)['TOTAL COST'].sum().sort_values(ascending=False).index})
-    chart.update_layout(title_text=title, title_x=0.5, xaxis_tickprefix = '$', xaxis_tickformat = ',.')
+                              category_orders={bin_by: data_index})
+    chart.update_layout(
+        title_text=title,
+        title_x=0.5,
+        xaxis_tickprefix = '$',
+        xaxis_tickformat = ',.',
+        yaxis={  # Trim labels that are larger than 15 chars
+            'tickmode': 'array',
+            'tickvals': data_index,
+            'ticktext': [f"{txt[:15]}..." if len(txt) > 15 else txt for txt in chart['layout']['yaxis']['categoryarray']]
+        },
+        dragmode=False
+    )
     chart.update_xaxes(title_text="Total Cost")
     chart.update_traces(hovertemplate='$%{x:.2f}<extra></extra>')
-    
+
     return chart
 
 requests_pathname_prefix = '/{}/{}/r/notebookSession/{}/'.format(
@@ -193,7 +211,8 @@ app.layout = html.Div([
                 id='billing_select',
                 options = ['No data'],
                 clearable = True,
-                searchable = True
+                searchable = True,
+                style={"width": "100%", "whiteSpace":"nowrap"}
             ),
             width=3
         ),
@@ -206,7 +225,8 @@ app.layout = html.Div([
                 id='project_select',
                 options = ['No data'],
                 clearable = True,
-                searchable = True
+                searchable = True,
+                style={"width": "100%", "whiteSpace":"nowrap"}
             ),
             width=3
         ),
@@ -219,7 +239,8 @@ app.layout = html.Div([
                 id='user_select',
                 options = ['No data'],
                 clearable = True,
-                searchable = True
+                searchable = True,
+                style={"width": "100%", "whiteSpace":"nowrap"}
             ),
             width=3
         ),
@@ -290,51 +311,38 @@ app.layout = html.Div([
         )
     ]),
     html.H4('Workload Cost Details', style={"margin-top": "50px"}),
-    html.Div(id='table-container')
+    html.Div(id='table-container'),
+    dbc.Row([], style={"margin-top": "50px"}),
 ], className="container")
 
-@app.callback(
-     [Output('cumulative-daily-costs', 'figure'),
-      Output('totalcard', 'children'),
-      Output('computecard', 'children'),
-      Output('storagecard', 'children'),
-      Output('billing_select', 'options'),
-      Output('project_select', 'options'),
-      Output('user_select', 'options'),
-      Output('user_chart', 'figure'),
-      Output('project_chart', 'figure'),
-      Output('org_chart', 'figure'),
-      Output('tag_chart', 'figure'),
-      Output('table-container', 'children')],
-     [Input('time_span_select', 'value'),
-      Input('user_select', 'value'),
-      Input('project_select', 'value'),
-      Input('billing_select', 'value')]
-)
-def update(time_span, user, project, billing_tag):
-    allocations = get_aggregated_allocations(time_span)
-    if not allocations:
-        return {}, html.H4('No data'), html.H4('No data'), html.H4('No data'), [], [], [], None, None, None, None, None
 
-    cost_table = get_execution_cost_table(allocations)
-    
-    if user is not None:
-        cost_table = cost_table[cost_table['USER'] == user]
-        
-    if project is not None:
-        cost_table = cost_table[cost_table['PROJECT NAME'] == project]
-        
-    if billing_tag is not None:
-        cost_table = cost_table[cost_table['BILLING TAG'] == billing_tag]
-    
+def get_dropdown_filters(cost_table):
+    # First obtain a unique sorted list for each dropdown
+    users_list = sorted(cost_table['USER'].unique().tolist(), key=str.casefold)
+    projects_list = sorted(cost_table['PROJECT NAME'].unique().tolist(), key=str.casefold)
+
+    unique_billing_tags = cost_table['BILLING TAG'].unique()
+    unique_billing_tags = unique_billing_tags[unique_billing_tags != NO_TAG]
+    billing_tags_list = sorted(unique_billing_tags.tolist(), key=str.casefold)
+    billing_tags_list.insert(0, NO_TAG)
+
+    # For each dropdown data return a dict containing the value/label/title (useful for tooltips)
+    billing_tags_dropdown = [{"label": billing_tag, "value": billing_tag, "title": billing_tag} for billing_tag in billing_tags_list]
+    projects_dropdown = [{"label": project, "value": project, "title": project} for project in projects_list]
+    users_dropdown = [{"label": user, "value": user, "title": user} for user in users_list]
+
+    return billing_tags_dropdown, projects_dropdown, users_dropdown
+
+
+def get_cost_cards(cost_table):
     total_sum = "${:.2f}".format(cost_table['TOTAL COST'].sum())
     compute_sum = "${:.2f}".format(cost_table['COMPUTE COST'].sum())
     storage_sum = "${:.2f}".format(cost_table['STORAGE COST'].sum())
-    
-    users = cost_table['USER'].unique().tolist()
-    projects = cost_table['PROJECT NAME'].unique().tolist()
-    billing_tags = cost_table['BILLING TAG'].unique().tolist()
-    
+
+    return total_sum, compute_sum, storage_sum
+
+
+def get_cumulative_cost_graph(cost_table, time_span):
     x_date_series = pd.date_range(get_today_timestamp() - get_time_delta(time_span), get_today_timestamp()).strftime('%B %-d')
     cost_table_grouped_by_date = cost_table.groupby('FORMATTED START')
 
@@ -353,12 +361,18 @@ def update(time_span, user, project, billing_tag):
             yaxis_tickformat = ',.'
         )
     }
-    
+    return cumulative_cost_graph
+
+
+def get_histogram_charts(cost_table):
     user_chart = buildHistogram(cost_table, 'USER')
     project_chart = buildHistogram(cost_table, 'PROJECT NAME')
     org_chart = buildHistogram(cost_table, 'ORGANIZATION')
     tag_chart = buildHistogram(cost_table, 'BILLING TAG')
-    
+    return user_chart, project_chart, org_chart, tag_chart
+
+
+def workload_cost_details(cost_table):
     formatted = {'locale': {}, 'nully': '', 'prefix': None, 'specifier': '$,.2f'}
     table = dash_table.DataTable(
         columns=[
@@ -380,8 +394,54 @@ def update(time_span, user, project, billing_tag):
             'fontWeight': 'bold'
         }
     )
-    
-    return cumulative_cost_graph, html.H4(total_sum), html.H4(compute_sum), html.H4(storage_sum), billing_tags, projects, users, user_chart, project_chart, org_chart, tag_chart, table
+    return table
+
+@app.callback(
+    [
+        Output('billing_select', 'options'),
+        Output('project_select', 'options'),
+        Output('user_select', 'options'),
+        Output('totalcard', 'children'),
+        Output('computecard', 'children'),
+        Output('storagecard', 'children'),
+        Output('cumulative-daily-costs', 'figure'),
+        Output('user_chart', 'figure'),
+        Output('project_chart', 'figure'),
+        Output('org_chart', 'figure'),
+        Output('tag_chart', 'figure'),
+        Output('table-container', 'children')
+    ],
+    [
+        Input('time_span_select', 'value'),
+        Input('billing_select', 'value'),
+        Input('project_select', 'value'),
+        Input('user_select', 'value')
+    ]
+)
+def update(time_span, billing_tag, project, user):
+    allocations = get_aggregated_allocations(time_span)
+    if not allocations:
+        return {}, html.H4('No data'), html.H4('No data'), html.H4('No data'), [], [], [], None, None, None, None, None
+
+    cost_table = get_execution_cost_table(allocations)
+
+    if user is not None:
+        cost_table = cost_table[cost_table['USER'] == user]
+
+    if project is not None:
+        cost_table = cost_table[cost_table['PROJECT NAME'] == project]
+
+    if billing_tag is not None:
+        cost_table = cost_table[cost_table['BILLING TAG'] == billing_tag]
+
+    return (
+        *get_dropdown_filters(cost_table),
+        *get_cost_cards(cost_table),
+        get_cumulative_cost_graph(cost_table, time_span),
+        *get_histogram_charts(cost_table),
+        workload_cost_details(cost_table),
+    )
+
 
 @app.callback(
     [Output('user_select', 'value')],
@@ -393,7 +453,7 @@ def user_clicked(clickData):
         return [x_value]
     else:
         return [None]
-    
+
 @app.callback(
     [Output('project_select', 'value')],
     [Input('project_chart', 'clickData')]
@@ -409,7 +469,7 @@ def project_clicked(clickData):
     [Output('billing_select', 'value')],
     [Input('tag_chart', 'clickData')]
 )
-def user_clicked(clickData):
+def billing_tag_clicked(clickData):
     if clickData is not None:
         x_value = clickData['points'][0]['y']
         return [x_value]
