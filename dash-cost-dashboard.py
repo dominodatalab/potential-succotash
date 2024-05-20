@@ -421,7 +421,7 @@ def workload_cost_details(cost_table):
 def update(time_span, billing_tag, project, user):
     allocations = get_aggregated_allocations(time_span)
     if not allocations:
-        return {}, html.H4('No data'), html.H4('No data'), html.H4('No data'), [], [], [], None, None, None, None, None
+        return [], [], [], 'No data', 'No data', 'No data', {}, None, None, None, None, None
 
     cost_table = get_execution_cost_table(allocations)
 
