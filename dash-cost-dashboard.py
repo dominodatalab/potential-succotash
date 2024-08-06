@@ -1,3 +1,13 @@
+import os
+import re
+import requests
+from datetime import timedelta
+from typing import List
+
+import dash_bootstrap_components as dbc
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objs as go
 from dash import (
     Dash,
     dash_table,
@@ -5,15 +15,10 @@ from dash import (
     html
 )
 from dash.dependencies import Input, Output
-import dash_bootstrap_components as dbc
-import pandas as pd
-import os
-import re
-import requests
-import plotly.graph_objs as go
-import plotly.express as px
-from typing import List
-from datetime import timedelta
+from pandas import (
+    DataFrame,
+    Timestamp
+)
 
 api_proxy = os.environ["DOMINO_API_PROXY"]
 
@@ -53,17 +58,17 @@ window_to_param = {
     "7d": "Last 7 days"
 }
 
-def get_today_timestamp() -> pd.Timestamp:
+def get_today_timestamp() -> Timestamp:
     return pd.Timestamp("today", tz="UTC").normalize()
 
-def get_time_delta(time_span):
+def get_time_delta(time_span) -> timedelta:
         if time_span == 'lastweek':
             days_to_use = 7
         else:
-            days_to_use = int(time_span.split('d')[0])
+            days_to_use = int(time_span[:-1])
         return timedelta(days=days_to_use-1)
 
-def get_aggregated_allocations(selection):
+def get_aggregated_allocations(selection: str) -> List:
     params = {
         "window": selection,
         "aggregate": (
@@ -75,8 +80,8 @@ def get_aggregated_allocations(selection):
             "label:dominodatalab.com/billing-tag,"
         ),
         "accumulate": False,
+        "shareIdle": True,
     }
-
 
     res = requests.get(allocations_url, params=params, headers=auth_header)
 
@@ -85,26 +90,26 @@ def get_aggregated_allocations(selection):
 
     return alloc_data
 
-def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
+def get_execution_cost_table(aggregated_allocations: List) -> DataFrame:
 
     exec_data = []
 
-    cpu_cost_key = ["cpuCost", "cpuCostAdjustment"]
-    gpu_cost_key = ["gpuCost", "gpuCostAdjustment"]
     storage_cost_keys = ["pvCost", "ramCost", "pvCostAdjustment", "ramCostAdjustment"]
 
     for costData in aggregated_allocations:
-        # Skip any cost data that starts with __ like __idle__ or __unallocated__
-        if costData["name"].startswith("__"):
-            continue
 
         workload_type, project_id, project_name, username, organization, billing_tag = costData["name"].split("/")
-        cpu_cost = sum([costData.get(k,0) for k in cpu_cost_key])
-        gpu_cost = sum([costData.get(k,0) for k in gpu_cost_key])
+        
+        cpu_cost = costData["cpuCost"] + costData["cpuCostAdjustment"]
+        gpu_cost = costData["gpuCost"] + costData["gpuCostAdjustment"]
         compute_cost = cpu_cost + gpu_cost
-        storage_cost = sum([costData.get(k,0) for k in storage_cost_keys])
-        total_cost = compute_cost + storage_cost
+        
+        ram_cost = costData["ramCost"] + costData["ramCostAdjustment"]
+        
+        total_cost = costData["totalCost"]
 
+        storage_cost = total_cost - compute_cost
+        
         # Change __unallocated__ billing tag into "No Tag"
         billing_tag = billing_tag if billing_tag != '__unallocated__' else NO_TAG
 
@@ -119,6 +124,7 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
             "CPU COST": cpu_cost,
             "GPU COST": gpu_cost,
             "COMPUTE COST": compute_cost,
+            "MEMORY COST": ram_cost,
             "STORAGE COST": storage_cost,
             "TOTAL COST": total_cost
         })
@@ -129,8 +135,8 @@ def get_execution_cost_table(aggregated_allocations: List) -> pd.DataFrame:
 
     return execution_costs
 
-def buildHistogram(cost_table, bin_by):
-    top = cost_table.groupby(bin_by)['TOTAL COST'].sum().nlargest(10).index
+def buildHistogram(cost_table: DataFrame, bin_by: str):
+    top = clean_df(cost_table, bin_by).groupby(bin_by)['TOTAL COST'].sum().nlargest(10).index
     costs = cost_table[cost_table[bin_by].isin(top)]
     data_index = costs.groupby(bin_by)['TOTAL COST'].sum().sort_values(ascending=False).index
     title = "Top " + bin_by.title() + " by Total Cost"
@@ -316,10 +322,24 @@ app.layout = html.Div([
 ], className="container")
 
 
-def get_dropdown_filters(cost_table):
-    # First obtain a unique sorted list for each dropdown
-    users_list = sorted(cost_table['USER'].unique().tolist(), key=str.casefold)
-    projects_list = sorted(cost_table['PROJECT NAME'].unique().tolist(), key=str.casefold)
+def clean_values(values_list: list) -> list:
+    """
+    remove "__unallocated__" from values'
+    """
+    return values_list[1:] if values_list[0].startswith("__") else values_list
+
+def clean_df(df: DataFrame, col: str) -> DataFrame:
+    """
+    remove "__unallocated__" records from dataframe for preview.
+    """
+    return df[~df[col].str.startswith("__")]
+
+def get_dropdown_filters(cost_table: DataFrame) -> tuple:
+    """ 
+    First obtain a unique sorted list for each dropdown
+    """
+    users_list = clean_values(sorted(cost_table['USER'].unique().tolist(), key=str.casefold))
+    projects_list = clean_values(sorted(cost_table['PROJECT NAME'].unique().tolist(), key=str.casefold))
 
     unique_billing_tags = cost_table['BILLING TAG'].unique()
     unique_billing_tags = unique_billing_tags[unique_billing_tags != NO_TAG]
@@ -334,7 +354,7 @@ def get_dropdown_filters(cost_table):
     return billing_tags_dropdown, projects_dropdown, users_dropdown
 
 
-def get_cost_cards(cost_table):
+def get_cost_cards(cost_table: DataFrame) -> tuple[str]:
     total_sum = "${:.2f}".format(cost_table['TOTAL COST'].sum())
     compute_sum = "${:.2f}".format(cost_table['COMPUTE COST'].sum())
     storage_sum = "${:.2f}".format(cost_table['STORAGE COST'].sum())
@@ -342,7 +362,7 @@ def get_cost_cards(cost_table):
     return total_sum, compute_sum, storage_sum
 
 
-def get_cumulative_cost_graph(cost_table, time_span):
+def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
     x_date_series = pd.date_range(get_today_timestamp() - get_time_delta(time_span), get_today_timestamp()).strftime('%B %-d')
     cost_table_grouped_by_date = cost_table.groupby('FORMATTED START')
 
@@ -364,7 +384,7 @@ def get_cumulative_cost_graph(cost_table, time_span):
     return cumulative_cost_graph
 
 
-def get_histogram_charts(cost_table):
+def get_histogram_charts(cost_table: DataFrame):
     user_chart = buildHistogram(cost_table, 'USER')
     project_chart = buildHistogram(cost_table, 'PROJECT NAME')
     org_chart = buildHistogram(cost_table, 'ORGANIZATION')
@@ -372,7 +392,7 @@ def get_histogram_charts(cost_table):
     return user_chart, project_chart, org_chart, tag_chart
 
 
-def workload_cost_details(cost_table):
+def workload_cost_details(cost_table: DataFrame):
     formatted = {'locale': {}, 'nully': '', 'prefix': None, 'specifier': '$,.2f'}
     table = dash_table.DataTable(
         columns=[
@@ -385,7 +405,7 @@ def workload_cost_details(cost_table):
             {'name': "GPU COST", 'id': "GPU COST", 'type': 'numeric', 'format': formatted},
             {'name': "STORAGE COST", 'id': "STORAGE COST", 'type': 'numeric', 'format': formatted},
         ],
-        data=cost_table.to_dict('records'),
+        data=clean_df(cost_table, "TYPE").to_dict('records'),
         page_size=10,
         sort_action='native',
         style_cell={'fontSize': '11px'},
