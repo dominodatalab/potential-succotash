@@ -4,10 +4,18 @@ This repo describes how to run the `Domino Cost Dashboard` app.
 
 _Table of Contents_
 
-- [Create New Project (optional)](#create-a-new-project)
-- [Publish the App ](#publish-the-app)
-  - [Checking running status](#checking-running-status-optional)
+- [Domino Cost Dashboard (Uses Dash by Plotly)](#domino-cost-dashboard-uses-dash-by-plotly)
+- [License](#license)
+- [Create a New Project](#create-a-new-project)
+- [Publish the App](#publish-the-app)
+  - [Checking running status (optional)](#checking-running-status-optional)
 - [Accessing Domino Cost Dashboard App](#accessing-domino-cost-dashboard-app)
+
+
+# License
+This template is licensed under Apache 2.0 and contains the following open source components: 
+* dash [MIT](https://github.com/plotly/dash/blob/dev/LICENSE)
+* pandas [BSD 3](https://github.com/pandas-dev/pandas/blob/main/LICENSE)
 
 # Create a New Project
 
