@@ -1,6 +1,9 @@
+# files 
+.DS_Store
+
+# directories
 .cache/
-.vscode
 .idea/
 .test/
+.vscode
 venv/
-.DS_Store

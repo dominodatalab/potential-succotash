@@ -25,8 +25,8 @@
       "link": "https://github.com/dominodatalab/costs-dashboard#LICENSE.md"
     },
     "data": {
-      "name": "This template uses mock data which is included with the repository in the data folder",
-      "link": "https://github.com/dominodatalab/costs-dashboard/tree/main/data"
+      "name": "This template uses data pulled from Domino Cost Apis",
+      "link": null
     },
     "dataFormat": "JSON",
     "recommended": false,
@@ -42,12 +42,15 @@
       "link": null
     },
     "importedRepositories": null,
+    "commitId": null,
+    "dependencies": null,
+    "models": null,
     "supportedDominoVersions": [
-      "5.11.0"
+      "6.0.0"
     ],
     "projectSettings": null,
     "test": {
-      "test_command": "pyflyte run --remote workflow.py training_workflow --data_path /mnt/code/data/data.csv",
+      "test_command": "pytest tests",
       "hardware_tier_id": "small-k8s"
     }
   }
