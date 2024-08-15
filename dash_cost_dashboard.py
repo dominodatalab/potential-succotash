@@ -20,14 +20,17 @@ from pandas import (
     Timestamp
 )
 
+from domino_cost.domino_cost import get_domino_namespace
 
-def get_domino_namespace() -> str:
-    api_host = os.environ["DOMINO_API_HOST"]
-    pattern = re.compile("(https?://)((.*\.)*)(?P<ns>.*?):(\d*)\/?(.*)")
-    match = pattern.match(api_host)
-    return match.group("ns")
+api_host = os.environ["DOMINO_API_HOST"]
+#
+# def get_domino_namespace() -> str:
+#     api_host = os.environ["DOMINO_API_HOST"]
+#     pattern = re.compile("(https?://)((.*\.)*)(?P<ns>.*?):(\d*)\/?(.*)")
+#     match = pattern.match(api_host)
+#     return match.group("ns")
 
-namespace = get_domino_namespace()
+namespace = get_domino_namespace(api_host)
 
 cost_url = f"http://domino-cost.{namespace}:9000"
 
