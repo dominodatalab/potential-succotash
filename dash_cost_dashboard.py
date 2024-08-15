@@ -1,5 +1,4 @@
 import os
-import re
 import requests
 from datetime import timedelta
 from typing import Callable, List
@@ -16,13 +15,20 @@ from dash import (
 )
 from dash.dependencies import Input, Output
 from pandas import (
-    DataFrame,
-    Timestamp
+    DataFrame
 )
 
-from domino_cost.domino_cost import get_domino_namespace
+from domino_cost.domino_cost import (
+    get_domino_namespace,
+    get_today_timestamp, get_time_delta
+)
+from domino_cost.exceptions import TokenExpiredException
+from domino_cost.constants import (
+    NO_TAG,
+    window_to_param
+)
 
-api_host = os.environ["DOMINO_API_HOST"]
+
 #
 # def get_domino_namespace() -> str:
 #     api_host = os.environ["DOMINO_API_HOST"]
@@ -30,15 +36,16 @@ api_host = os.environ["DOMINO_API_HOST"]
 #     match = pattern.match(api_host)
 #     return match.group("ns")
 
+api_host = os.environ["DOMINO_API_HOST"]
+api_proxy = os.environ["DOMINO_API_PROXY"]
+
 namespace = get_domino_namespace(api_host)
 
 cost_url = f"http://domino-cost.{namespace}:9000"
-
-api_proxy = os.environ["DOMINO_API_PROXY"]
 auth_url = f"{api_proxy}/account/auth/service/authenticate"
 
-class TokenExpiredException(Exception):
-    pass
+# class TokenExpiredException(Exception):
+#     pass
 
 def get_token() -> str:
     orgs_res = requests.get(auth_url)
@@ -51,23 +58,23 @@ auth_header = {
     'X-Authorization': get_token()
 }
 
-NO_TAG = "No tag"
+# NO_TAG = "No tag"
+#
+# window_to_param = {
+#     "30d": "Last 30 days",
+#     "14d": "Last 14 days",
+#     "7d": "Last 7 days"
+# }
 
-window_to_param = {
-    "30d": "Last 30 days",
-    "14d": "Last 14 days",
-    "7d": "Last 7 days"
-}
+# def get_today_timestamp() -> Timestamp:
+#     return pd.Timestamp("today", tz="UTC").normalize()
 
-def get_today_timestamp() -> Timestamp:
-    return pd.Timestamp("today", tz="UTC").normalize()
-
-def get_time_delta(time_span) -> timedelta:
-        if time_span == 'lastweek':
-            days_to_use = 7
-        else:
-            days_to_use = int(time_span[:-1])
-        return timedelta(days=days_to_use-1)
+# def get_time_delta(time_span) -> timedelta:
+#         if time_span == 'lastweek':
+#             days_to_use = 7
+#         else:
+#             days_to_use = int(time_span[:-1])
+#         return timedelta(days=days_to_use-1)
 
 def process_or_zero(func: Callable, posInt: int) -> int:
     if posInt > 0:
