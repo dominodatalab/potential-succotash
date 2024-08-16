@@ -40,3 +40,4 @@ class TestConstants:
             Two = "two"
 
         assert TestEnum.to_values_list() == ["one", "two"]
+        assert TestEnum.One == "one"
