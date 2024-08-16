@@ -2,6 +2,7 @@ import re
 from datetime import timedelta
 from typing import Any
 from typing import Callable
+from typing import Dict
 from typing import List
 
 import pandas as pd
@@ -46,21 +47,15 @@ def distribute_cost(df: DataFrame) -> DataFrame:
     """
     distributes __unallocated__ cost for cleaner representation.
     """
-    fields_list = [
-        CostFieldsLabels.CPU_COST,
-        CostFieldsLabels.GPU_COST,
-        CostFieldsLabels.COMPUTE_COST,
-        CostFieldsLabels.MEMORY_COST,
-        CostFieldsLabels.STORAGE_COST,
-        CostFieldsLabels.ALLOC_COST,
-    ]
+    fields_list = CostFieldsLabels.to_values_list()
     cost_unallocated = df[df["TYPE"].str.startswith("__")]
     cost_allocated = df[~df["TYPE"].str.startswith("__")]
-    cost_allocated_total_sum = cost_allocated[CostFieldsLabels.ALLOC_COST].sum()
+    cost_allocated_total_sum = cost_allocated[CostFieldsLabels.ALLOC_COST.value].sum()
 
     for field in fields_list:
         cost_allocated[field] = cost_allocated[field] + (
-            (cost_allocated[CostFieldsLabels.ALLOC_COST] / cost_allocated_total_sum) * cost_unallocated[field].sum()
+            (cost_allocated[CostFieldsLabels.ALLOC_COST.value] / cost_allocated_total_sum)
+            * cost_unallocated[field].sum()
         )
     return cost_allocated
 
@@ -69,7 +64,7 @@ def distribute_cloud_cost(df: DataFrame, cost: float) -> DataFrame:
     """
     distribute unaccounted cloud cost across allocated executions.
     """
-    accounted_cost = df[CostFieldsLabels.ALLOC_COST].sum()
+    accounted_cost = df[CostFieldsLabels.ALLOC_COST.value].sum()
     cloud_cost_unaccounted = process_or_zero(cost - accounted_cost, cost)
 
     df["CLOUD COST"] = cloud_cost_unaccounted * (df["ALLOC COST"] / accounted_cost)
@@ -119,10 +114,10 @@ def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
 
 
 def get_histogram_charts(cost_table: DataFrame):
-    user_chart = build_histogram(cost_table, CostLabels.USER)
-    project_chart = build_histogram(cost_table, CostLabels.PROJECT_NAME)
-    org_chart = build_histogram(cost_table, CostLabels.ORGANIZATION)
-    tag_chart = build_histogram(cost_table, CostLabels.BILLING_TAG)
+    user_chart = build_histogram(cost_table, CostLabels.USER.value)
+    project_chart = build_histogram(cost_table, CostLabels.PROJECT_NAME.value)
+    org_chart = build_histogram(cost_table, CostLabels.ORGANIZATION.value)
+    tag_chart = build_histogram(cost_table, CostLabels.BILLING_TAG.value)
     return user_chart, project_chart, org_chart, tag_chart
 
 
@@ -136,37 +131,37 @@ def workload_cost_details(cost_table: DataFrame):
     table = dash_table.DataTable(
         columns=[
             {"name": "TYPE", "id": "TYPE"},
-            {"name": CostLabels.PROJECT_NAME, "id": CostLabels.PROJECT_NAME},
-            {"name": CostLabels.BILLING_TAG, "id": CostLabels.BILLING_TAG},
-            {"name": CostLabels.USER, "id": CostLabels.USER},
+            {"name": CostLabels.PROJECT_NAME.value, "id": CostLabels.PROJECT_NAME.value},
+            {"name": CostLabels.BILLING_TAG.value, "id": CostLabels.BILLING_TAG.value},
+            {"name": CostLabels.USER.value, "id": CostLabels.USER.value},
             {"name": "START DATE", "id": "FORMATTED START"},
             {
-                "name": CostFieldsLabels.CPU_COST,
-                "id": CostFieldsLabels.CPU_COST,
+                "name": CostFieldsLabels.CPU_COST.value,
+                "id": CostFieldsLabels.CPU_COST.value,
                 "type": "numeric",
                 "format": formatted,
             },
             {
-                "name": CostFieldsLabels.GPU_COST,
-                "id": CostFieldsLabels.GPU_COST,
+                "name": CostFieldsLabels.GPU_COST.value,
+                "id": CostFieldsLabels.GPU_COST.value,
                 "type": "numeric",
                 "format": formatted,
             },
             {
-                "name": CostFieldsLabels.STORAGE_COST,
-                "id": CostFieldsLabels.STORAGE_COST,
+                "name": CostFieldsLabels.STORAGE_COST.value,
+                "id": CostFieldsLabels.STORAGE_COST.value,
                 "type": "numeric",
                 "format": formatted,
             },
             {
-                "name": CostAggregatedLabels.CLOUD_COST,
-                "id": CostAggregatedLabels.CLOUD_COST,
+                "name": CostAggregatedLabels.CLOUD_COST.value,
+                "id": CostAggregatedLabels.CLOUD_COST.value,
                 "type": "numeric",
                 "format": formatted,
             },
             {
-                "name": CostAggregatedLabels.TOTAL_COST,
-                "id": CostAggregatedLabels.TOTAL_COST,
+                "name": CostAggregatedLabels.TOTAL_COST.value,
+                "id": CostAggregatedLabels.TOTAL_COST.value,
                 "type": "numeric",
                 "format": formatted,
             },
@@ -184,15 +179,15 @@ def get_dropdown_filters(cost_table: DataFrame) -> tuple:
     """
     First obtain a unique sorted list for each dropdown
     """
-    users_list = clean_values(sorted(cost_table[CostLabels.USER].unique().tolist(), key=str.casefold))
+    users_list = clean_values(sorted(cost_table[CostLabels.USER.value].unique().tolist(), key=str.casefold))
     projects_list = clean_values(
         sorted(
-            cost_table[CostLabels.PROJECT_NAME].unique().tolist(),
+            cost_table[CostLabels.PROJECT_NAME.value].unique().tolist(),
             key=str.casefold,
         )
     )
 
-    unique_billing_tags = cost_table[CostLabels.BILLING_TAG].unique()
+    unique_billing_tags = cost_table[CostLabels.BILLING_TAG.value].unique()
     unique_billing_tags = unique_billing_tags[unique_billing_tags != NO_TAG]
     billing_tags_list = sorted(unique_billing_tags.tolist(), key=str.casefold)
     billing_tags_list.insert(0, NO_TAG)
@@ -208,29 +203,29 @@ def get_dropdown_filters(cost_table: DataFrame) -> tuple:
 
 
 def get_cost_cards(cost_table: DataFrame) -> tuple[str]:
-    total_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.TOTAL_COST].sum())
-    cloud_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.CLOUD_COST].sum())
-    compute_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.COMPUTE_COST].sum())
-    storage_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.STORAGE_COST].sum())
+    total_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.TOTAL_COST.value].sum())
+    cloud_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.CLOUD_COST.value].sum())
+    compute_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.COMPUTE_COST.value].sum())
+    storage_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.STORAGE_COST.value].sum())
     return total_sum, cloud_sum, compute_sum, storage_sum
 
 
 def build_histogram(cost_table: DataFrame, bin_by: str):
-    top = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST].sum().nlargest(10).index
+    top = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().nlargest(10).index
     costs = cost_table[cost_table[bin_by].isin(top)]
-    data_index = costs.groupby(bin_by)[CostAggregatedLabels.TOTAL_COST].sum().sort_values(ascending=False).index
+    data_index = costs.groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().sort_values(ascending=False).index
     title = "Top " + bin_by.title() + " by Total Cost"
     chart = px.histogram(
         costs,
-        x=CostAggregatedLabels.TOTAL_COST,
+        x=CostAggregatedLabels.TOTAL_COST.value,
         y=bin_by,
         orientation="h",
         title=title,
         labels={
             bin_by: bin_by.title(),
-            CostAggregatedLabels.TOTAL_COST: "Total Cost",
+            CostAggregatedLabels.TOTAL_COST.value: "Total Cost",
         },
-        hover_data={CostAggregatedLabels.TOTAL_COST: "$:.2f"},
+        hover_data={CostAggregatedLabels.TOTAL_COST.value: "$:.2f"},
         category_orders={bin_by: data_index},
     )
     chart.update_layout(
@@ -247,13 +242,13 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
         },
         dragmode=False,
     )
-    chart.update_xaxes(title_text=CostAggregatedLabels.TOTAL_COST)
+    chart.update_xaxes(title_text=CostAggregatedLabels.TOTAL_COST.value)
     chart.update_traces(hovertemplate="$%{x:.2f}<extra></extra>")
 
     return chart
 
 
-def get_execution_cost_table(aggregated_allocations: List, cloud_cost: float) -> DataFrame:
+def get_execution_cost_table(aggregated_allocations: List) -> list[dict[str | Any, Any]]:
     exec_data = []
 
     for costData in aggregated_allocations:
@@ -284,22 +279,26 @@ def get_execution_cost_table(aggregated_allocations: List, cloud_cost: float) ->
         exec_data.append(
             {
                 "TYPE": workload_type,
-                CostLabels.PROJECT_NAME: project_name,
-                CostLabels.BILLING_TAG: billing_tag,
-                CostLabels.USER: username,
-                CostLabels.ORGANIZATION: organization,
+                CostLabels.PROJECT_NAME.value: project_name,
+                CostLabels.BILLING_TAG.value: billing_tag,
+                CostLabels.USER.value: username,
+                CostLabels.ORGANIZATION.value: organization,
                 "START": costData["window"]["start"],
                 "END": costData["window"]["end"],
-                CostFieldsLabels.CPU_COST: cpu_cost,
-                CostFieldsLabels.GPU_COST: gpu_cost,
-                CostFieldsLabels.COMPUTE_COST: compute_cost,
-                CostFieldsLabels.MEMORY_COST: ram_cost,
-                CostFieldsLabels.STORAGE_COST: storage_cost,
-                CostFieldsLabels.ALLOC_COST: alloc_total_cost,
+                CostFieldsLabels.CPU_COST.value: cpu_cost,
+                CostFieldsLabels.GPU_COST.value: gpu_cost,
+                CostFieldsLabels.COMPUTE_COST.value: compute_cost,
+                CostFieldsLabels.MEMORY_COST.value: ram_cost,
+                CostFieldsLabels.STORAGE_COST.value: storage_cost,
+                CostFieldsLabels.ALLOC_COST.value: alloc_total_cost,
             }
         )
 
-    execution_costs = distribute_cost(pd.DataFrame(exec_data))
+    return exec_data
+
+
+def get_distributed_execution_cost(cost_table: list[dict[str, Any]], cloud_cost: float) -> DataFrame:
+    execution_costs = distribute_cost(pd.DataFrame(cost_table))
     distributed_cost = distribute_cloud_cost(execution_costs, cloud_cost)
 
     distributed_cost["START"] = pd.to_datetime(distributed_cost["START"])

@@ -1,3 +1,4 @@
+import json
 from datetime import timedelta
 from enum import StrEnum
 
@@ -31,6 +32,14 @@ class TestCostDashboard:
         input_vals = ["__unallocated__", "one", "two", "three"]
         output_vals = ["one", "two", "three"]
         assert clean_values(input_vals) == output_vals
+
+    # def test_get_execution_cost_table(self):
+    #     with open("data/allocation.json", "r") as test_file:
+    #         allocation_data = json.load(test_file)
+    #
+    #     alloc = get_execution_cost_table(allocation_data)
+    #
+    #     assert len(alloc) == 11
 
 
 class TestConstants:
