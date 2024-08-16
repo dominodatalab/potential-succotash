@@ -11,6 +11,7 @@ from domino_cost.constants import CostLabels
 from domino_cost.constants import window_to_param
 from domino_cost.domino_cost import get_cost_cards
 from domino_cost.domino_cost import get_cumulative_cost_graph
+from domino_cost.domino_cost import get_distributed_execution_cost
 from domino_cost.domino_cost import get_domino_namespace
 from domino_cost.domino_cost import get_dropdown_filters
 from domino_cost.domino_cost import get_execution_cost_table
@@ -267,23 +268,24 @@ def update(time_span, billing_tag, project, user):
             None,
         )
 
-    cost_table = get_execution_cost_table(allocations, cloud_cost_sum)
+    cost_table = get_execution_cost_table(allocations)
+    distr_cost_table = get_distributed_execution_cost(cost_table, cloud_cost_sum)
 
     if user is not None:
-        cost_table = cost_table[cost_table[CostLabels.USER] == user]
+        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.USER] == user]
 
     if project is not None:
-        cost_table = cost_table[cost_table[CostLabels.PROJECT_NAME] == project]
+        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.PROJECT_NAME] == project]
 
     if billing_tag is not None:
-        cost_table = cost_table[cost_table[CostLabels.BILLING_TAG] == billing_tag]
+        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.BILLING_TAG] == billing_tag]
 
     return (
-        *get_dropdown_filters(cost_table),
-        *get_cost_cards(cost_table),
-        get_cumulative_cost_graph(cost_table, time_span),
-        *get_histogram_charts(cost_table),
-        workload_cost_details(cost_table),
+        *get_dropdown_filters(distr_cost_table),
+        *get_cost_cards(distr_cost_table),
+        get_cumulative_cost_graph(distr_cost_table, time_span),
+        *get_histogram_charts(distr_cost_table),
+        workload_cost_details(distr_cost_table),
     )
 
 
