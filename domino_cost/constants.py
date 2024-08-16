@@ -40,15 +40,15 @@ class CostEnums(StrEnum):
     def to_values_list(cls):
         return list(map(lambda c: c.value, cls))
 
-    def __repr__(self):
-        return self.value
-
 
 class CostLabels(CostEnums):
     BILLING_TAG = "BILLING TAG"
     ORGANIZATION = "ORGANIZATION"
     PROJECT_NAME = "PROJECT NAME"
     USER = "USER"
+
+    def __repr__(self):
+        return self.value
 
 
 class CostFieldsLabels(CostEnums):
@@ -59,12 +59,18 @@ class CostFieldsLabels(CostEnums):
     STORAGE_COST = "STORAGE COST"
     ALLOC_COST = "ALLOC COST"
 
+    def __repr__(self):
+        return self.value
+
 
 class CostAggregatedLabels(CostEnums):
     TOTAL_COST = "TOTAL COST"
     CLOUD_COST = "CLOUD COST"
     COMPUTE_COST = "COMPUTE COST"
     STORAGE_COST = "STORAGE COST"
+
+    def __repr__(self):
+        return self.value
 
 
 NO_TAG = "No tag"
