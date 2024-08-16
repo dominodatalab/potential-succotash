@@ -40,6 +40,9 @@ class CostEnums(StrEnum):
     def to_values_list(cls):
         return list(map(lambda c: c.value, cls))
 
+    def __repr__(self):
+        return self.value
+
 
 class CostLabels(CostEnums):
     BILLING_TAG = "BILLING TAG"
