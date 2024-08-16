@@ -1,10 +1,10 @@
-from __future__ import annotations
-
 from enum import StrEnum
 
 
 class CostEnums(StrEnum):
-    pass
+    @classmethod
+    def to_values_list(cls):
+        return list(map(lambda c: c.value, cls))
 
 
 class CostLabels(CostEnums):
