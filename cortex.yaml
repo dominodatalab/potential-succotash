@@ -1,15 +1,14 @@
 openapi: 3.0.1
 info:
-  title: cost-dashboard-dash
+  title: costs-dashboard
   description: Cortex descriptor created automatically by eng-devprod
-  x-cortex-tag: cost-dashboard-dash
+  x-cortex-tag: costs-dashboard
   x-cortex-type: service
   x-cortex-git:
     github:
-      repository: cerebrotech/cost-dashboard-dash
+      repository: dominodatalab/costs-dashboard
   x-cortex-owners:
   - name: eng-idsm
     type: group
     provider: OKTA
     description: Updated by eng-devprod
-

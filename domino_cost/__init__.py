@@ -1,5 +1,3 @@
-# __all__ = ["domino_cost"]
-#
-# # from domino._version import __version__
-#
-# from . import domino_cost
+__all__ = ["domino_cost", "constants"]
+
+from domino_cost import constants, domino_cost
