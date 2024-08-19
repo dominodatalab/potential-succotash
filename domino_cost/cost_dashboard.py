@@ -1,5 +1,4 @@
 import os
-import sys
 
 import dash_bootstrap_components as dbc
 from dash import Dash
@@ -270,23 +269,23 @@ def update(time_span, billing_tag, project, user):
         )
 
     cost_table = get_execution_cost_table(allocations)
-    distr_cost_table = get_distributed_execution_cost(cost_table, cloud_cost_sum)
+    distributed_cost_table = get_distributed_execution_cost(cost_table, cloud_cost_sum)
 
     if user is not None:
-        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.USER] == user]
+        distributed_cost_table = distributed_cost_table[distributed_cost_table[CostLabels.USER] == user]
 
     if project is not None:
-        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.PROJECT_NAME] == project]
+        distributed_cost_table = distributed_cost_table[distributed_cost_table[CostLabels.PROJECT_NAME] == project]
 
     if billing_tag is not None:
-        distr_cost_table = distr_cost_table[distr_cost_table[CostLabels.BILLING_TAG] == billing_tag]
+        distributed_cost_table = distributed_cost_table[distributed_cost_table[CostLabels.BILLING_TAG] == billing_tag]
 
     return (
-        *get_dropdown_filters(distr_cost_table),
-        *get_cost_cards(distr_cost_table),
-        get_cumulative_cost_graph(distr_cost_table, time_span),
-        *get_histogram_charts(distr_cost_table),
-        workload_cost_details(distr_cost_table),
+        *get_dropdown_filters(distributed_cost_table),
+        *get_cost_cards(distributed_cost_table),
+        get_cumulative_cost_graph(distributed_cost_table, time_span),
+        *get_histogram_charts(distributed_cost_table),
+        workload_cost_details(distributed_cost_table),
     )
 
 

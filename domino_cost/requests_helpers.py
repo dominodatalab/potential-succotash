@@ -30,7 +30,7 @@ def get_cloud_cost_sum(selection: str, base_url: str, headers: dict) -> float:
         for cost in cost_amortized:
             if cost["cloudCosts"]:
                 cloud_cost_sum += cost["cloudCosts"][invoice_entity_id]["amortizedNetCost"]["cost"]
-    except Exception as e:  # handle for users without cloudcost, or no data in cloudcost
+    except Exception as e:  # handle for users without cloud cost, or no data from cloudCost
         print(e)
 
     return cloud_cost_sum

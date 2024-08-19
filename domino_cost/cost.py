@@ -2,7 +2,6 @@ import re
 from datetime import timedelta
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import List
 
 import pandas as pd
