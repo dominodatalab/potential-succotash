@@ -252,16 +252,20 @@ def get_execution_cost_table(aggregated_allocations: List) -> list[dict[str | An
     exec_data = []
 
     for costData in aggregated_allocations:
-        (
-            workload_type,
-            project_id,
-            project_name,
-            username,
-            organization,
-            billing_tag,
-        ) = costData[
-            "name"
-        ].split("/")
+        try:
+            (
+                workload_type,
+                project_id,
+                project_name,
+                username,
+                organization,
+                billing_tag,
+            ) = costData[
+                "name"
+            ].split("/")
+        except Exception as e:
+            print(e)
+            continue
 
         cpu_cost = costData["cpuCost"] + costData["cpuCostAdjustment"]
         gpu_cost = costData["gpuCost"] + costData["gpuCostAdjustment"]
