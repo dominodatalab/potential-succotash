@@ -25,8 +25,8 @@
       "link": "https://github.com/dominodatalab/costs-dashboard#LICENSE.md"
     },
     "data": {
-      "name": "This template uses data pulled from Domino Cost Apis",
-      "link": null
+      "name": "This template uses data pulled from Domino Cost Apis. These are some sample data",
+      "link": "https://github.com/dominodatalab/costs-dashboard/tree/main/data"
     },
     "dataFormat": "JSON",
     "recommended": false,
@@ -54,4 +54,3 @@
       "hardware_tier_id": "small-k8s"
     }
   }
-  
