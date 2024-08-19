@@ -1,6 +1,13 @@
-.cache/
+# files
+.DS_Store
 .vscode
+*.ipynb
+
+# directories
+__pycache__/
+.cache/
 .idea/
 .test/
 venv/
-.DS_Store
+.ipynb_checkpoints
+.pytest_cache

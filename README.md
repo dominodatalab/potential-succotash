@@ -4,48 +4,63 @@ This repo describes how to run the `Domino Cost Dashboard` app.
 
 _Table of Contents_
 
-- [Create New Project (optional)](#create-a-new-project)
-- [Publish the App ](#publish-the-app)
-  - [Checking running status](#checking-running-status-optional)
+- [Domino Cost Dashboard (Uses Dash by Plotly)](#domino-cost-dashboard-uses-dash-by-plotly)
+- [License](#license)
+- [Create a New Project](#create-a-new-project)
+- [Publish the App](#publish-the-app)
+  - [Checking running status (optional)](#checking-running-status-optional)
 - [Accessing Domino Cost Dashboard App](#accessing-domino-cost-dashboard-app)
 
-# Create a New Project
 
-The Domino Cost Dashboard app requires a Project to be launched from.
+# License
+This template is licensed under Apache 2.0 and contains the following open source components:
+* dash [MIT](https://github.com/plotly/dash/blob/dev/LICENSE)
+* pandas [BSD 3](https://github.com/pandas-dev/pandas/blob/main/LICENSE)
+
+# Create a New Git Based Project
+
+The Domino Cost Dashboard App can be launched from a git based project.
 
 1. Go to the Projects page in Domino and click **New Project**.
 
    ![project's dashboard](/img/01.projectsDashboard.png)
 
-2. Select a name and visibility for this project, then click **Create**.
+2. Select a name and visibility for this project, then click **Next**.
 
-   ![create new project](/img/02.createNewProject.png)
+   ![create new git based project](/img/02-0.createNewProject.png)
+
+3. Select **Git Service Provider** as Hosted By
+
+   ![create new git based project](/img/02-1.selectGitProvider.png)
+
+5.  Select **GitHub** from Git Service Provider drop down menu
+
+   ![create new git based project](/img/02-2.selectServiceProvider.png)
+
+6. Select your **Git Credentials** from the drop down menu
+
+   ![create new git based project](/img/02-3.selectGitCredentials.png)
+
+7. Select **dominodatalab** from the Owner/Organization
+
+   ![create new git based project](/img/02-4.selectGitOwner.png)
+
+10. Enter **https://github.com/dominodatalab/costs-dashboard** in Repository Name field, then click **Create**
+
+   ![create new git based project](/img/02-5.selectRepositoryName.png)
+
 
 ---
 # Publish the App
 
 Once a Project has been created to host the dashboard app, follow these steps to publish it:
 
-1. Download the following three files from this repository:
-
-   - `requirements.txt`
-   - `app.sh`
-   - `dash-cost-dashboard.py`
-
-2. Go to the `Code` section by clicking in the side bar of the project. There, upload the three files into the project.
-
-   ![upload files](/img/03.uploadFiles.png)
-
-
-3. Verify that they are uploaded properly:
-
-   ![files in project](/img/04.files.png)
-
-3. Navigate to the `App` section in the sidebar of the Project menu. Add a title for the App that you prefer and you can easily identify. The `standard` environment and the smaller harware tier will be enought to run it.
+1. Navigate to the `App` section in the sidebar of the Project menu.
+ Add a title for the App that you prefer and you can easily identify. The `standard` environment and the smaller harware tier will be enought to run it.
 
    ![project's dashboard](/img/05.publishApp.png)
 
-4. After publishing it, you'll be redirected to the `App Status` pages.
+2. After publishing it, you'll be redirected to the `App Status` pages.
 
    ![project's dashboard](/img/06.runApp.png)
 
