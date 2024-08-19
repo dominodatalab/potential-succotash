@@ -6,6 +6,8 @@ import pytest
 
 from domino_cost.cost import *
 from domino_cost.cost_enums import CostEnums
+from domino_cost.requests_helpers import get_cloud_cost_sum
+from tests.conftest import dummy_hostname
 
 
 class TestCostDashboard:
@@ -33,13 +35,24 @@ class TestCostDashboard:
         output_vals = ["one", "two", "three"]
         assert clean_values(input_vals) == output_vals
 
-    # def test_get_execution_cost_table(self):
-    #     with open("data/allocation.json", "r") as test_file:
-    #         allocation_data = json.load(test_file)
-    #
-    #     alloc = get_execution_cost_table(allocation_data)
-    #
-    #     assert len(alloc) == 11
+    def test_get_execution_cost_table(self):
+        with open("data/allocation.json", "r") as alloc_tf:
+            allocation_data = json.load(alloc_tf)
+
+        alloc = get_execution_cost_table(allocation_data)
+
+        assert len(allocation_data) == 13
+        assert len(alloc) == 13
+
+    def test_get_empty_cloud_cost(self, dummy_hostname):
+        """
+        assert cloud cost return 0 when endpoint not found for backward compatibility.
+        """
+        selection = "7d"
+        base_url = dummy_hostname
+        headers = {}
+        cc = get_cloud_cost_sum(selection, base_url, headers)
+        assert cc == 0.0
 
 
 class TestConstants:
