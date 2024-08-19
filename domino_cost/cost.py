@@ -9,6 +9,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from dash import dash_table
+from dash.dash_table import DataTable
 from pandas import DataFrame
 from pandas import Timestamp
 
@@ -87,7 +88,7 @@ def clean_df(df: DataFrame, col: str) -> DataFrame:
     return df[~df[col].str.startswith("__")]
 
 
-def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
+def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta) -> dict:
     x_date_series = pd.date_range(
         get_today_timestamp() - get_time_delta(time_span),
         get_today_timestamp(),
@@ -113,7 +114,7 @@ def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
     return cumulative_cost_graph
 
 
-def get_histogram_charts(cost_table: DataFrame):
+def get_histogram_charts(cost_table: DataFrame) -> tuple:
     user_chart = build_histogram(cost_table, CostLabels.USER.value)
     project_chart = build_histogram(cost_table, CostLabels.PROJECT_NAME.value)
     org_chart = build_histogram(cost_table, CostLabels.ORGANIZATION.value)
@@ -121,7 +122,7 @@ def get_histogram_charts(cost_table: DataFrame):
     return user_chart, project_chart, org_chart, tag_chart
 
 
-def workload_cost_details(cost_table: DataFrame):
+def workload_cost_details(cost_table: DataFrame) -> DataTable:
     formatted = {
         "locale": {},
         "nully": "",
@@ -248,7 +249,7 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
     return chart
 
 
-def get_execution_cost_table(aggregated_allocations: List) -> list[dict[str | Any, Any]]:
+def get_execution_cost_table(aggregated_allocations: List) -> list[dict]:
     exec_data = []
 
     for costData in aggregated_allocations:
