@@ -3,6 +3,7 @@ from datetime import timedelta
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Union
 
 import pandas as pd
 import plotly.express as px
@@ -35,11 +36,11 @@ def get_time_delta(time_span) -> timedelta:
     return timedelta(days=days_to_use - 1)
 
 
-def process_or_zero(func: Callable, pos_int: float) -> Callable[..., Any] | float:
-    if pos_int > 0:
+def process_or_zero(func: Callable, pos_int: float) -> Union[Callable, float]:
+    if pos_int > 0.0:
         return func
     else:
-        return 0
+        return 0.0
 
 
 def distribute_cost(df: DataFrame) -> DataFrame:
