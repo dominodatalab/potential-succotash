@@ -226,7 +226,8 @@ app.layout = html.Div(
 )
 
 
-output_list = [
+@app.callback(
+    [
         Output("billing_select", "options"),
         Output("project_select", "options"),
         Output("user_select", "options"),
@@ -240,10 +241,7 @@ output_list = [
         Output("org_chart", "figure"),
         Output("tag_chart", "figure"),
         Output("table-container", "children"),
-    ]
-
-@app.callback(
-    *output_list,
+    ],
     [
         Input("time_span_select", "value"),
         Input("billing_select", "value"),
