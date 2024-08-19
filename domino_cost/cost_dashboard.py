@@ -231,7 +231,7 @@ output_list = [
         Output("project_select", "options"),
         Output("user_select", "options"),
         Output("totalcard", "children"),
-#         Output("cloudcard", "children"),
+        Output("cloudcard", "children"),
         Output("computecard", "children"),
         Output("storagecard", "children"),
         Output("cumulative-daily-costs", "figure"),
