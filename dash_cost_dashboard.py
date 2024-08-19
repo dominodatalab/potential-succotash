@@ -7,19 +7,19 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 
-from domino_cost.constants import CostLabels
-from domino_cost.constants import window_to_param
-from domino_cost.domino_cost import get_cost_cards
-from domino_cost.domino_cost import get_cumulative_cost_graph
-from domino_cost.domino_cost import get_distributed_execution_cost
-from domino_cost.domino_cost import get_domino_namespace
-from domino_cost.domino_cost import get_dropdown_filters
-from domino_cost.domino_cost import get_execution_cost_table
-from domino_cost.domino_cost import get_histogram_charts
-from domino_cost.domino_cost import workload_cost_details
-from domino_cost.http_requests import get_aggregated_allocations
-from domino_cost.http_requests import get_cloud_cost_sum
-from domino_cost.http_requests import get_token
+from domino_cost.cost import get_cost_cards
+from domino_cost.cost import get_cumulative_cost_graph
+from domino_cost.cost import get_distributed_execution_cost
+from domino_cost.cost import get_domino_namespace
+from domino_cost.cost import get_dropdown_filters
+from domino_cost.cost import get_execution_cost_table
+from domino_cost.cost import get_histogram_charts
+from domino_cost.cost import workload_cost_details
+from domino_cost.cost_enums import CostLabels
+from domino_cost.cost_enums import window_to_param
+from domino_cost.requests_helpers import get_aggregated_allocations
+from domino_cost.requests_helpers import get_cloud_cost_sum
+from domino_cost.requests_helpers import get_token
 
 api_host = os.environ["DOMINO_API_HOST"]
 api_proxy = os.environ["DOMINO_API_PROXY"]

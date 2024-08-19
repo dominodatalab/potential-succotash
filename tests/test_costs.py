@@ -4,8 +4,8 @@ from enum import StrEnum
 
 import pytest
 
-from domino_cost.constants import CostEnums
-from domino_cost.domino_cost import *
+from domino_cost.cost import *
+from domino_cost.cost_enums import CostEnums
 
 
 class TestCostDashboard:

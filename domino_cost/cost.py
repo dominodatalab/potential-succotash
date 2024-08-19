@@ -12,10 +12,10 @@ from dash import dash_table
 from pandas import DataFrame
 from pandas import Timestamp
 
-from domino_cost.constants import CostAggregatedLabels
-from domino_cost.constants import CostFieldsLabels
-from domino_cost.constants import CostLabels
 from domino_cost.constants import NO_TAG
+from domino_cost.cost_enums import CostAggregatedLabels
+from domino_cost.cost_enums import CostFieldsLabels
+from domino_cost.cost_enums import CostLabels
 
 
 def get_domino_namespace(api_host) -> str:
