@@ -226,13 +226,12 @@ app.layout = html.Div(
 )
 
 
-@app.callback(
-    [
+output_list = [
         Output("billing_select", "options"),
         Output("project_select", "options"),
         Output("user_select", "options"),
         Output("totalcard", "children"),
-        Output("cloudcard", "children"),
+#         Output("cloudcard", "children"),
         Output("computecard", "children"),
         Output("storagecard", "children"),
         Output("cumulative-daily-costs", "figure"),
@@ -241,7 +240,10 @@ app.layout = html.Div(
         Output("org_chart", "figure"),
         Output("tag_chart", "figure"),
         Output("table-container", "children"),
-    ],
+    ]
+
+@app.callback(
+    *output_list,
     [
         Input("time_span_select", "value"),
         Input("billing_select", "value"),
