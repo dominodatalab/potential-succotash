@@ -3,11 +3,13 @@ from datetime import timedelta
 from typing import Any
 from typing import Callable
 from typing import List
+from typing import Union
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objs as go
 from dash import dash_table
+from dash.dash_table import DataTable
 from pandas import DataFrame
 from pandas import Timestamp
 
@@ -35,11 +37,11 @@ def get_time_delta(time_span) -> timedelta:
     return timedelta(days=days_to_use - 1)
 
 
-def process_or_zero(func: Callable, pos_int: float) -> Callable[..., Any] | float:
-    if pos_int > 0:
+def process_or_zero(func: Callable, pos_int: float) -> Union[Callable, float]:
+    if pos_int > 0.0:
         return func
     else:
-        return 0
+        return 0.0
 
 
 def distribute_cost(df: DataFrame) -> DataFrame:
@@ -86,7 +88,7 @@ def clean_df(df: DataFrame, col: str) -> DataFrame:
     return df[~df[col].str.startswith("__")]
 
 
-def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
+def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta) -> dict:
     x_date_series = pd.date_range(
         get_today_timestamp() - get_time_delta(time_span),
         get_today_timestamp(),
@@ -112,7 +114,7 @@ def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta):
     return cumulative_cost_graph
 
 
-def get_histogram_charts(cost_table: DataFrame):
+def get_histogram_charts(cost_table: DataFrame) -> tuple:
     user_chart = build_histogram(cost_table, CostLabels.USER.value)
     project_chart = build_histogram(cost_table, CostLabels.PROJECT_NAME.value)
     org_chart = build_histogram(cost_table, CostLabels.ORGANIZATION.value)
@@ -120,7 +122,7 @@ def get_histogram_charts(cost_table: DataFrame):
     return user_chart, project_chart, org_chart, tag_chart
 
 
-def workload_cost_details(cost_table: DataFrame):
+def workload_cost_details(cost_table: DataFrame) -> DataTable:
     formatted = {
         "locale": {},
         "nully": "",
@@ -247,20 +249,24 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
     return chart
 
 
-def get_execution_cost_table(aggregated_allocations: List) -> list[dict[str | Any, Any]]:
+def get_execution_cost_table(aggregated_allocations: List) -> list[dict]:
     exec_data = []
 
     for costData in aggregated_allocations:
-        (
-            workload_type,
-            project_id,
-            project_name,
-            username,
-            organization,
-            billing_tag,
-        ) = costData[
-            "name"
-        ].split("/")
+        try:
+            (
+                workload_type,
+                project_id,
+                project_name,
+                username,
+                organization,
+                billing_tag,
+            ) = costData[
+                "name"
+            ].split("/")
+        except Exception as e:
+            print(e)
+            continue
 
         cpu_cost = costData["cpuCost"] + costData["cpuCostAdjustment"]
         gpu_cost = costData["gpuCost"] + costData["gpuCostAdjustment"]
