@@ -95,14 +95,17 @@ def get_cumulative_cost_graph(cost_table: DataFrame, time_span: timedelta) -> di
     ).strftime("%B %-d")
     cost_table_grouped_by_date = cost_table.groupby("FORMATTED START")
 
+    colors = ['#FF6543','#A5C5F6', '#563FB3', '#3C3A42', '#777384',]  # Color codes
+
     cumulative_cost_graph = {
         "data": [
             go.Bar(
                 x=x_date_series,
                 y=cost_table_grouped_by_date[column].sum().reindex(x_date_series, fill_value=0),
                 name=column,
+                marker=dict(color=colors[i])  # Assign color here
             )
-            for column in ["CPU COST", "GPU COST", "STORAGE COST"]
+            for i, column in enumerate (["CPU COST", "GPU COST", "STORAGE COST"])
         ],
         "layout": go.Layout(
             title="Daily Costs by Type",
@@ -228,6 +231,7 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
         },
         hover_data={CostAggregatedLabels.TOTAL_COST.value: "$:.2f"},
         category_orders={bin_by: data_index},
+        color_discrete_sequence =["#ff6543"]
     )
     chart.update_layout(
         title_text=title,
