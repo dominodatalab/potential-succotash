@@ -19,6 +19,7 @@ from domino_cost.cost import get_domino_namespace
 from domino_cost.cost import get_dropdown_filters
 from domino_cost.cost import get_execution_cost_table
 from domino_cost.cost import get_histogram_charts
+from domino_cost.cost import get_last_n_days
 from domino_cost.cost import workload_cost_details
 from domino_cost.cost_enums import CostLabels
 from domino_cost.requests_helpers import get_aggregated_allocations
@@ -48,10 +49,8 @@ app = Dash(
     requests_pathname_prefix=requests_pathname_prefix,
 )
 
-billing_tag_display = "block"
-cloud_cost_display = "none"
 today = date.today()
-last_30 = today - timedelta(days=30)
+last_30 = get_last_n_days(30)
 
 app.layout = html.Div(
     [

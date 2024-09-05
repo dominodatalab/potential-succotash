@@ -1,8 +1,12 @@
+import logging
 from typing import List
 
 import requests
 
+from domino_cost import config
 from domino_cost.exceptions import TokenExpiredException
+
+logger = logging.getLogger(__name__)
 
 
 def get_token(auth_url: str) -> str:
@@ -30,8 +34,14 @@ def get_cloud_cost_sum(selection: str, base_url: str, headers: dict) -> float:
         for cost in cost_amortized:
             if cost["cloudCosts"]:
                 cloud_cost_sum += cost["cloudCosts"][invoice_entity_id]["amortizedNetCost"]["cost"]
+
+        logger.info(f"cloud cost available: {cloud_cost_sum}")
+        config.cloud_cost_available = True
+        logger.info("setting cloud cost availability: %s", config.cloud_cost_available)
     except Exception as e:  # handle for users without cloud cost, or no data from cloudCost
-        print(e)
+        config.cloud_cost_available = False
+        logger.warning("setting cloud cost availability: %s", config.cloud_cost_available)
+        logger.error("acquiring cloud cost failed: %s", e)
 
     return cloud_cost_sum
 

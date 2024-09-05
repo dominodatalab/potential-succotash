@@ -56,9 +56,20 @@ class CostFieldsLabels(CostEnums):
     STORAGE_COST = "STORAGE COST"
     ALLOC_COST = "ALLOC COST"
 
+    def get_legend_labels(self):
+        return list(map(lambda c: c.value, [self.CPU_COST, self.GPU_COST, self.STORAGE_COST]))
+
 
 class CostAggregatedLabels(CostEnums):
     TOTAL_COST = "TOTAL COST"
     CLOUD_COST = "CLOUD COST"
     COMPUTE_COST = "COMPUTE COST"
     STORAGE_COST = "STORAGE COST"
+
+
+class CostGraphFields(CostEnums):
+    START_DATE = "START DATE"
+    END = "END"
+    TYPE = "TYPE"
+    FORMATTED_START = "FORMATTED START"
+    START = "START"
