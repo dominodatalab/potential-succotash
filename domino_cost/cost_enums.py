@@ -58,8 +58,9 @@ class CostFieldsLabels(CostEnums):
 
 
 def get_legend_labels():
-    with CostFieldsLabels as labels:
-        return list(map(lambda c: c.value, [labels.CPU_COST, labels.GPU_COST, labels.STORAGE_COST]))
+    return list(
+        map(lambda c: c.value, [CostFieldsLabels.CPU_COST, CostFieldsLabels.GPU_COST, CostFieldsLabels.STORAGE_COST])
+    )
 
 
 class CostAggregatedLabels(CostEnums):
