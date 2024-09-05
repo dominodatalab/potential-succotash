@@ -91,7 +91,7 @@ app.layout = html.Div(
                         id="date-picker-range",
                         min_date_allowed=date(2023, 1, 1),
                         max_date_allowed=today,
-                        initial_visible_month=last_30,
+                        initial_visible_month=today,
                         end_date=today,
                     ),
                     width=3,

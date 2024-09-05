@@ -7,7 +7,7 @@ class StrEnum(str, Enum):  # Importing from newer enum version.
     """
 
     def __new__(cls, *values):
-        "values must already be of type `str`"
+        """values must already be of type `str`"""
         if len(values) > 3:
             raise TypeError("too many arguments for str(): %r" % (values,))
         if len(values) == 1:
@@ -56,8 +56,10 @@ class CostFieldsLabels(CostEnums):
     STORAGE_COST = "STORAGE COST"
     ALLOC_COST = "ALLOC COST"
 
-    def get_legend_labels(self):
-        return list(map(lambda c: c.value, [self.CPU_COST, self.GPU_COST, self.STORAGE_COST]))
+
+def get_legend_labels():
+    with CostFieldsLabels as labels:
+        return list(map(lambda c: c.value, [labels.CPU_COST, labels.GPU_COST, labels.STORAGE_COST]))
 
 
 class CostAggregatedLabels(CostEnums):

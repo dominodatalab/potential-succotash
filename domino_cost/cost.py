@@ -21,6 +21,7 @@ from domino_cost.cost_enums import CostAggregatedLabels
 from domino_cost.cost_enums import CostFieldsLabels
 from domino_cost.cost_enums import CostGraphFields
 from domino_cost.cost_enums import CostLabels
+from domino_cost.cost_enums import get_legend_labels
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +136,7 @@ def get_cumulative_cost_graph(cost_table: DataFrame, time_span: str) -> dict:
                 name=column,
                 marker=dict(color=colors[i]),  # Assign color here
             )
-            for i, column in enumerate(CostFieldsLabels.get_legend_labels())
+            for i, column in enumerate(get_legend_labels())
         ],
         "layout": go.Layout(
             title="Daily Costs by Type",
@@ -309,7 +310,8 @@ def get_execution_cost_table(aggregated_allocations: List) -> list[dict]:
                 "name"
             ].split("/")
         except Exception as e:
-            print(e)
+            logger.warning("failed to parse record: %s", costData["name"])
+            logger.warning(e)
             continue
 
         cpu_cost = costData["cpuCost"] + costData["cpuCostAdjustment"]
