@@ -85,6 +85,7 @@ app.layout = html.Div(
                         searchable=False,
                     ),
                     width=2,
+                    style={"height": "48px", "margin-top": "5px"},
                 ),
                 dbc.Col(
                     dcc.DatePickerRange(
@@ -95,6 +96,7 @@ app.layout = html.Div(
                         end_date=today,
                     ),
                     width=3,
+                    style={"height": "50px", "margin-top": "5px"},
                 ),
                 dbc.Col(dcc.Input(id="date_time_select", style={"display": "none"}), width=6),
             ],
