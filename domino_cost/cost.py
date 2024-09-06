@@ -16,7 +16,6 @@ from pandas import DataFrame
 
 from domino_cost import config
 from domino_cost import constants
-from domino_cost.config import cloud_cost_available
 from domino_cost.constants import NO_TAG
 from domino_cost.cost_enums import CostAggregatedLabels
 from domino_cost.cost_enums import CostFieldsLabels
@@ -259,8 +258,8 @@ def get_dropdown_filters(cost_table: DataFrame) -> tuple:
 def get_cost_cards(cost_table: DataFrame) -> tuple[str]:
     total_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.TOTAL_COST.value].sum())
     cloud_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.CLOUD_COST.value].sum())
-    compute_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.COMPUTE_COST.value].sum())
-    storage_sum = "${:.2f}".format(cost_table[CostAggregatedLabels.STORAGE_COST.value].sum())
+    compute_sum = "${:.2f}".format(cost_table[CostFieldsLabels.COMPUTE_COST.value].sum())
+    storage_sum = "${:.2f}".format(cost_table[CostFieldsLabels.STORAGE_COST.value].sum())
     return total_sum, cloud_sum, compute_sum, storage_sum
 
 
