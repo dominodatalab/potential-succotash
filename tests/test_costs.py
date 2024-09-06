@@ -6,12 +6,21 @@ from domino_cost.requests_helpers import get_cloud_cost_sum
 from tests.conftest import dummy_hostname
 
 
-class TestCostDashboard:
+class TestCost:
     def test_get_namespace(self):
         host_name = "http://thisfrontend.my-platform:80"
-        host_ns = get_domino_namespace(host_name)
+        cost = Cost(api_host=host_name, api_proxy="someprox")
+        host_ns = cost.get_domino_namespace()
         assert host_ns == "my-platform"
 
+    def test_format_date(self, dummy_hostname):
+        cost = Cost(api_host=dummy_hostname, api_proxy="someprox")
+        test_date = "2024-09-06"
+        formatted_date = cost.format_date(test_date)
+        assert formatted_date == "2024-09-06T00:00:00Z"
+
+
+class TestCostDashboard:
     def test_get_time_delta(self):
         input = "lastweek"
         expected = timedelta(days=6)

@@ -26,16 +26,24 @@ from domino_cost.cost_enums import get_legend_labels
 logger = logging.getLogger(__name__)
 
 
-def get_domino_namespace(api_host) -> str:
-    pattern = re.compile("(https?://)((.*\.)*)(?P<ns>.*?):(\d*)\/?(.*)")
-    match = pattern.match(api_host)
-    logger.info("getting domino namespace from %s", api_host)
-    return match.group("ns")
+class Cost:
+    def __init__(self, api_host: str, api_proxy: str):
+        self.api_host = api_host
+        self.api_proxy = api_proxy
+        self.auth_url = f"{api_proxy}/account/auth/service/authenticate"
+        self.namespace = self.get_domino_namespace()
+        self.cost_url = f"http://domino-cost.{self.namespace}:9000"
 
+    def get_domino_namespace(self) -> str:
+        pattern = re.compile("(https?://)((.*\.)*)(?P<ns>.*?):(\d*)\/?(.*)")
+        match = pattern.match(self.api_host)
+        logger.info("getting domino namespace from %s", self.api_host)
+        return match.group("ns")
 
-def format_date(date_ts):
-    date_obj = date.fromisoformat(date_ts)
-    return date_obj.strftime(constants.DATE_FORMAT)
+    @staticmethod
+    def format_date(date_ts):
+        date_obj = date.fromisoformat(date_ts)
+        return date_obj.strftime(constants.DATE_FORMAT)
 
 
 def to_pd_ts(time_ts: str = "today") -> pd.Timestamp:
@@ -73,7 +81,7 @@ def distribute_cost(df: DataFrame) -> DataFrame:
     cost_allocated_total_sum = cost_allocated[CostFieldsLabels.ALLOC_COST.value].sum()
 
     for field in fields_list:
-        cost_allocated[field] = cost_allocated[field] + (
+        cost_allocated.loc[:, field] = cost_allocated[field] + (
             (cost_allocated[CostFieldsLabels.ALLOC_COST.value] / cost_allocated_total_sum)
             * cost_unallocated[field].sum()
         )
@@ -86,7 +94,7 @@ def distribute_cloud_cost(df: DataFrame, cost: float) -> DataFrame:
     """
     logger.info("distribute cloud costs %s", cost)
     accounted_cost = df[CostFieldsLabels.ALLOC_COST.value].sum()
-    cloud_cost_unaccounted = process_or_zero(cost - accounted_cost, cost)
+    cloud_cost_unaccounted = process_or_zero(cost - accounted_cost, cost - accounted_cost)
 
     df[CostAggregatedLabels.CLOUD_COST.value] = cloud_cost_unaccounted * (
         df[CostFieldsLabels.ALLOC_COST.value] / accounted_cost

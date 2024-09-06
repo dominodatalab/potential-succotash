@@ -3,4 +3,4 @@ import pytest
 
 @pytest.fixture
 def dummy_hostname():
-    return "http://domino.somemockedcosts.com"
+    return "http://dummy.host-name:80"

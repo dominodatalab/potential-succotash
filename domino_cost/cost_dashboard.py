@@ -11,11 +11,10 @@ from dash.dependencies import Input
 from dash.dependencies import Output
 
 from domino_cost.constants import window_to_param
-from domino_cost.cost import format_date
+from domino_cost.cost import Cost
 from domino_cost.cost import get_cost_cards
 from domino_cost.cost import get_cumulative_cost_graph
 from domino_cost.cost import get_distributed_execution_cost
-from domino_cost.cost import get_domino_namespace
 from domino_cost.cost import get_dropdown_filters
 from domino_cost.cost import get_execution_cost_table
 from domino_cost.cost import get_histogram_charts
@@ -31,11 +30,9 @@ logger = logging.getLogger(__name__)
 api_host = os.environ["DOMINO_API_HOST"]
 api_proxy = os.environ["DOMINO_API_PROXY"]
 
-namespace = get_domino_namespace(api_host)
-cost_url = f"http://domino-cost.{namespace}:9000"
-auth_url = f"{api_proxy}/account/auth/service/authenticate"
+cost = Cost(api_host, api_proxy)
 
-auth_header = {"X-Authorization": get_token(auth_url)}
+auth_header = {"X-Authorization": get_token(cost.auth_url)}
 
 requests_pathname_prefix = "/{}/{}/r/notebookSession/{}/".format(
     os.environ.get("DOMINO_PROJECT_OWNER"),
@@ -259,14 +256,14 @@ app.layout = html.Div(
 )
 def update_output(start_date, end_date):
     if start_date and end_date:
-        return format_date(start_date) + "," + format_date(end_date)
+        return cost.format_date(start_date) + "," + cost.format_date(end_date)
     else:
         return "30d"
 
 
 @app.callback(Output(component_id="cloud-cost-card", component_property="style"), [Input("time_span_select", "value")])
 def show_hide_element(time_span):
-    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost_url, headers=auth_header)
+    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
     if cloud_cost_sum > 0:
         return {"display": "block"}
     else:
@@ -278,16 +275,16 @@ def show_hide_element(time_span):
     Input("time_span_select", "value"),
 )
 def update_output_date(time_span_select):
-    suffix = "," + format_date(str(today))
+    suffix = "," + cost.format_date(str(today))
     if str(time_span_select).endswith("d"):
         logger.info("processing data for span time %s", time_span_select)
         start_date = today - timedelta(days=int(time_span_select.split("d")[0]))
-        return format_date(str(start_date)) + suffix
+        return cost.format_date(str(start_date)) + suffix
     elif time_span_select:
         logger.info("processing data for span time %s", time_span_select)
         return time_span_select
     else:
-        return format_date(str(last_30)) + suffix
+        return cost.format_date(str(last_30)) + suffix
 
 
 output_list = [
@@ -317,8 +314,8 @@ output_list = [
     ],
 )
 def update(time_span, billing_tag, project, user):
-    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost_url, headers=auth_header)
-    allocations = get_aggregated_allocations(time_span, base_url=cost_url, headers=auth_header)
+    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
+    allocations = get_aggregated_allocations(time_span, base_url=cost.cost_url, headers=auth_header)
 
     if not allocations:
         return (
