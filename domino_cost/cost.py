@@ -164,15 +164,8 @@ def get_histogram_charts(cost_table: DataFrame) -> tuple:
     return user_chart, project_chart, org_chart, tag_chart
 
 
-def workload_cost_details(cost_table: DataFrame) -> DataTable:
-    formatted = {
-        "locale": {},
-        "nully": "",
-        "prefix": None,
-        "specifier": "$,.2f",
-    }
-
-    columns = [
+def get_colums():
+    base_columns = [
         {"name": "TYPE", "id": "TYPE"},
         {"name": CostLabels.PROJECT_NAME.value, "id": CostLabels.PROJECT_NAME.value},
         {"name": CostLabels.BILLING_TAG.value, "id": CostLabels.BILLING_TAG.value},
@@ -182,40 +175,50 @@ def workload_cost_details(cost_table: DataFrame) -> DataTable:
             "name": CostFieldsLabels.CPU_COST.value,
             "id": CostFieldsLabels.CPU_COST.value,
             "type": "numeric",
-            "format": formatted,
+            "format": constants.formatted,
         },
         {
             "name": CostFieldsLabels.GPU_COST.value,
             "id": CostFieldsLabels.GPU_COST.value,
             "type": "numeric",
-            "format": formatted,
+            "format": constants.formatted,
         },
         {
             "name": CostFieldsLabels.STORAGE_COST.value,
             "id": CostFieldsLabels.STORAGE_COST.value,
             "type": "numeric",
-            "format": formatted,
+            "format": constants.formatted,
         },
     ]
 
-    if config.cloud_cost_available:
-        columns.append(
-            {
-                "name": CostAggregatedLabels.CLOUD_COST.value,
-                "id": CostAggregatedLabels.CLOUD_COST.value,
-                "type": "numeric",
-                "format": formatted,
-            }
-        )
+    cost_column = [
+        {
+            "name": CostAggregatedLabels.CLOUD_COST.value,
+            "id": CostAggregatedLabels.CLOUD_COST.value,
+            "type": "numeric",
+            "format": constants.formatted,
+        }
+    ]
 
-    columns.append(
+    total_col = [
         {
             "name": CostAggregatedLabels.TOTAL_COST.value,
             "id": CostAggregatedLabels.TOTAL_COST.value,
             "type": "numeric",
-            "format": formatted,
+            "format": constants.formatted,
         }
-    )
+    ]
+
+    if config.cloud_cost_available:
+        logger.info("cloud cost availability: %s. Returning all cols", config.cloud_cost_available)
+        return base_columns + cost_column + total_col
+    else:
+        logger.info("cloud cost availability: %s. Returning base cols", config.cloud_cost_available)
+        return base_columns + total_col
+
+
+def workload_cost_details(cost_table: DataFrame) -> DataTable:
+    columns = get_colums()
 
     table = dash_table.DataTable(
         columns=columns,

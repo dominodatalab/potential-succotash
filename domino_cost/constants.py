@@ -6,3 +6,10 @@ window_to_param = {
     "14d": "Last 14 days",
     "7d": "Last 7 days",
 }
+
+formatted = {
+    "locale": {},
+    "nully": "",
+    "prefix": None,
+    "specifier": "$,.2f",
+}
