@@ -43,6 +43,7 @@ def get_cloud_cost_sum(selection: str, base_url: str, headers: dict) -> float:
         logger.warning("setting cloud cost availability: %s", config.cloud_cost_available)
         logger.error("acquiring cloud cost failed: %s", e)
 
+    config.default_is_updated = True
     return cloud_cost_sum
 
 

@@ -262,9 +262,20 @@ def update_output(start_date, end_date):
         return "29d"
 
 
+def update_configs(time_span):
+    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
+    if cloud_cost_sum > 0:
+        config.cloud_cost_available = True
+    else:
+        config.cloud_cost_available = False
+    config.default_is_updated = True
+
+
 @app.callback(Output(component_id="cloud-cost-card", component_property="style"), [Input("time_span_select", "value")])
-def show_hide_element(time_span):
-    if time_span and config.cloud_cost_available:
+def show_hide_cloud_cost(time_span):
+    if not config.default_is_updated:
+        update_configs(time_span)
+    if config.cloud_cost_available:
         return {"display": "block"}
     else:
         return {"display": "none"}
