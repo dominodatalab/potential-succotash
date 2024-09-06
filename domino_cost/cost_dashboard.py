@@ -10,6 +10,7 @@ from dash import html
 from dash.dependencies import Input
 from dash.dependencies import Output
 
+from domino_cost import config
 from domino_cost.constants import window_to_param
 from domino_cost.cost import Cost
 from domino_cost.cost import get_cost_cards
@@ -263,8 +264,7 @@ def update_output(start_date, end_date):
 
 @app.callback(Output(component_id="cloud-cost-card", component_property="style"), [Input("time_span_select", "value")])
 def show_hide_element(time_span):
-    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
-    if cloud_cost_sum > 0:
+    if time_span and config.cloud_cost_available:
         return {"display": "block"}
     else:
         return {"display": "none"}

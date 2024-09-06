@@ -14,6 +14,7 @@ from dash import dash_table
 from dash.dash_table import DataTable
 from pandas import DataFrame
 
+from domino_cost import config
 from domino_cost import constants
 from domino_cost.config import cloud_cost_available
 from domino_cost.constants import NO_TAG
@@ -198,7 +199,7 @@ def workload_cost_details(cost_table: DataFrame) -> DataTable:
         },
     ]
 
-    if cloud_cost_available:
+    if config.cloud_cost_available:
         columns.append(
             {
                 "name": CostAggregatedLabels.CLOUD_COST.value,

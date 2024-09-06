@@ -66,8 +66,6 @@ def get_legend_labels():
 class CostAggregatedLabels(CostEnums):
     TOTAL_COST = "TOTAL COST"
     CLOUD_COST = "CLOUD COST"
-    COMPUTE_COST = "COMPUTE COST"
-    STORAGE_COST = "STORAGE COST"
 
 
 class CostGraphFields(CostEnums):
