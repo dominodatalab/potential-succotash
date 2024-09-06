@@ -48,7 +48,7 @@ app = Dash(
 )
 
 today = date.today()
-last_30 = get_last_n_days(30)
+last_30 = get_last_n_days(29)
 
 app.layout = html.Div(
     [
@@ -78,12 +78,12 @@ app.layout = html.Div(
                     dcc.Dropdown(
                         id="time_span_select",
                         options=window_to_param,
-                        value="30d",
+                        value="29d",
                         clearable=False,
                         searchable=False,
                     ),
                     width=2,
-                    style={"height": "48px", "margin-top": "5px"},
+                    style={"height": "50px", "margin-top": "5px"},
                 ),
                 dbc.Col(
                     dcc.DatePickerRange(
@@ -259,7 +259,7 @@ def update_output(start_date, end_date):
     if start_date and end_date:
         return cost.format_date(start_date) + "," + cost.format_date(end_date)
     else:
-        return "30d"
+        return "29d"
 
 
 @app.callback(Output(component_id="cloud-cost-card", component_property="style"), [Input("time_span_select", "value")])

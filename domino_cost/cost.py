@@ -164,7 +164,7 @@ def get_histogram_charts(cost_table: DataFrame) -> tuple:
     return user_chart, project_chart, org_chart, tag_chart
 
 
-def get_colums():
+def get_columns():
     base_columns = [
         {"name": "TYPE", "id": "TYPE"},
         {"name": CostLabels.PROJECT_NAME.value, "id": CostLabels.PROJECT_NAME.value},
@@ -218,7 +218,7 @@ def get_colums():
 
 
 def workload_cost_details(cost_table: DataFrame) -> DataTable:
-    columns = get_colums()
+    columns = get_columns()
 
     table = dash_table.DataTable(
         columns=columns,
