@@ -94,7 +94,7 @@ app.layout = html.Div(
                         end_date=today,
                     ),
                     width=3,
-                    style={"height": "50px", "margin-top": "5px", "display": "inline-block"},
+                    style={"height": "50px", "margin-top": "5px"},
                 ),
                 dbc.Col(dcc.Input(id="date_time_select", style={"display": "none"}), width=6),
             ],
