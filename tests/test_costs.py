@@ -1,8 +1,4 @@
 import json
-from datetime import timedelta
-from enum import StrEnum
-
-import pytest
 
 from domino_cost.cost import *
 from domino_cost.cost_enums import CostEnums
@@ -10,12 +6,21 @@ from domino_cost.requests_helpers import get_cloud_cost_sum
 from tests.conftest import dummy_hostname
 
 
-class TestCostDashboard:
+class TestCost:
     def test_get_namespace(self):
         host_name = "http://thisfrontend.my-platform:80"
-        host_ns = get_domino_namespace(host_name)
+        cost = Cost(api_host=host_name, api_proxy="someprox")
+        host_ns = cost.get_domino_namespace()
         assert host_ns == "my-platform"
 
+    def test_format_date(self, dummy_hostname):
+        cost = Cost(api_host=dummy_hostname, api_proxy="someprox")
+        test_date = "2024-09-06"
+        formatted_date = cost.format_date(test_date)
+        assert formatted_date == "2024-09-06T00:00:00Z"
+
+
+class TestCostDashboard:
     def test_get_time_delta(self):
         input = "lastweek"
         expected = timedelta(days=6)
@@ -53,6 +58,13 @@ class TestCostDashboard:
         headers = {}
         cc = get_cloud_cost_sum(selection, base_url, headers)
         assert cc == 0.0
+
+    def test_to_pd_ts(self):
+        input_ts = "2017-08-01T00:00:00Z"
+        actual_ts = to_pd_ts(input_ts)
+        expected_ts = pd.Timestamp(input_ts, tz="UTC").normalize()
+        assert actual_ts == expected_ts
+        assert to_pd_ts() == pd.Timestamp("today", tz="UTC").normalize()
 
 
 class TestConstants:
