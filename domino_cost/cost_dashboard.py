@@ -325,7 +325,6 @@ output_list = [
     ],
 )
 def update(time_span, billing_tag, project, user):
-    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
     allocations = get_aggregated_allocations(time_span, base_url=cost.cost_url, headers=auth_header)
 
     if not allocations:
@@ -339,13 +338,14 @@ def update(time_span, billing_tag, project, user):
             "No data",
             "No data",
             {},
-            None,
-            None,
-            None,
-            None,
-            None,
+            {},
+            {},
+            {},
+            {},
+            {},
         )
 
+    cloud_cost_sum = get_cloud_cost_sum(time_span, base_url=cost.cost_url, headers=auth_header)
     cost_table = get_execution_cost_table(allocations)
     distributed_cost_table = get_distributed_execution_cost(cost_table, cloud_cost_sum)
 
