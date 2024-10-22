@@ -329,10 +329,12 @@ def update(time_span, billing_tag, project, user):
     allocations = get_aggregated_allocations(time_span, base_url=cost.cost_url, headers=auth_header)
 
     if not allocations:
+        logger.info("No allocations found for the given time span")
         return (
             [],
             [],
             [],
+            "No data",
             "No data",
             "No data",
             "No data",
