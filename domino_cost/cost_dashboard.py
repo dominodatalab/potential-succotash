@@ -337,12 +337,12 @@ def update(time_span, billing_tag, project, user):
             "No data",
             "No data",
             "No data",
-            "No data",
             {},
-            None,
-            None,
-            None,
-            None,
+            {},
+            {},
+            {},
+            {},
+            {},
             None,
         )
 
