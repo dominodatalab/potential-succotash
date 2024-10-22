@@ -40,8 +40,9 @@ def get_cloud_cost_sum(selection: str, base_url: str, headers: dict) -> float:
         logger.info("setting cloud cost availability: %s", config.cloud_cost_available)
     except Exception as e:  # handle for users without cloud cost, or no data from cloudCost
         config.cloud_cost_available = False
+        logger.warning("could not acquire cloud cost - not configured or no data to retrieve")
         logger.warning("setting cloud cost availability: %s", config.cloud_cost_available)
-        logger.error("acquiring cloud cost failed: %s", e)
+        logger.debug("exception received when trying to obtain cloud costs: %s", e)
 
     config.default_is_updated = True
     return cloud_cost_sum
