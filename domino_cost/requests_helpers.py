@@ -49,7 +49,8 @@ def get_cloud_cost_sum(selection: str, base_url: str, headers: dict) -> float:
 
 
 def get_aggregated_allocations(selection: str, base_url: str, headers: dict) -> List:
-    allocations_url = f"{base_url}/allocation"
+    allocations_url = f"{base_url}/allocation/summary"
+    #allocations_url = f"{base_url}/allocation"
 
     params = {
         "window": selection,
