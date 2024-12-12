@@ -325,11 +325,11 @@ def get_execution_cost_table(aggregated_allocations: List) -> list[dict]:
             logger.warning(e)
             continue
 
-        cpu_cost = costData["cpuCost"] + costData["cpuCostAdjustment"]
-        gpu_cost = costData["gpuCost"] + costData["gpuCostAdjustment"]
+        cpu_cost = costData.get("cpuCost", 0) + costData.get("cpuCostAdjustment", 0)
+        gpu_cost = costData.get("gpuCost", 0) + costData.get("gpuCostAdjustment", 0)
         compute_cost = cpu_cost + gpu_cost
 
-        ram_cost = costData["ramCost"] + costData["ramCostAdjustment"]
+        ram_cost = costData.get("ramCost", 0) + costData.get("ramCostAdjustment", 0)
 
         alloc_total_cost = costData["totalCost"]
 
