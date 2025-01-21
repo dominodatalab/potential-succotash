@@ -267,12 +267,20 @@ def get_cost_cards(cost_table: DataFrame) -> tuple[str]:
 
 
 def build_histogram(cost_table: DataFrame, bin_by: str):
-    top = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().nlargest(10).index
-    costs = cost_table[cost_table[bin_by].isin(top)]
-    data_index = costs.groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().sort_values(ascending=False).index
+    grouped = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum()
+    top = grouped.nlargest(10)
+    top_df = top.reset_index()
+    top_df.columns = [bin_by, CostAggregatedLabels.TOTAL_COST.value]
+    topIndex = top.index
+
+    # Truncate labels beforehand
+    truncated_labels = [
+        f"{label[:15]}..." if len(label) > 15 else label for label in topIndex
+    ]
+
     title = "Top " + bin_by.title() + " by Total Cost"
     chart = px.histogram(
-        costs,
+        top_df,
         x=CostAggregatedLabels.TOTAL_COST.value,
         y=bin_by,
         orientation="h",
@@ -282,7 +290,7 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
             CostAggregatedLabels.TOTAL_COST.value: "Total Cost",
         },
         hover_data={CostAggregatedLabels.TOTAL_COST.value: "$:.2f"},
-        category_orders={bin_by: data_index},
+        category_orders={bin_by: topIndex},
         color_discrete_sequence=["#ff6543"],
     )
     chart.update_layout(
@@ -292,10 +300,8 @@ def build_histogram(cost_table: DataFrame, bin_by: str):
         xaxis_tickformat=",.",
         yaxis={  # Trim labels that are larger than 15 chars
             "tickmode": "array",
-            "tickvals": data_index,
-            "ticktext": [
-                f"{txt[:15]}..." if len(txt) > 15 else txt for txt in chart["layout"]["yaxis"]["categoryarray"]
-            ],
+            "tickvals": topIndex,
+            "ticktext": truncated_labels,  # Use pre-computed truncated labels,
         },
         dragmode=False,
     )
