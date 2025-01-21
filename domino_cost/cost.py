@@ -267,7 +267,7 @@ def get_cost_cards(cost_table: DataFrame) -> tuple[str]:
 
 
 def build_histogram(cost_table: DataFrame, bin_by: str):
-    top = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().grouped.nlargest(10)
+    top = clean_df(cost_table, bin_by).groupby(bin_by)[CostAggregatedLabels.TOTAL_COST.value].sum().nlargest(10)
     top_df = top.reset_index()
     top_df.columns = [bin_by, CostAggregatedLabels.TOTAL_COST.value]
     topIndex = top.index
